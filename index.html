@@ -4,556 +4,222 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lie Broadcast — Fake It Till You Take It</title>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
   :root {
-    --bg-dark: #090d16;
-    --bg-panel: #111827;
-    --bg-card: #1b2436;
-    --border: #2a3650;
-    --text-main: #f1f5f9;
-    --text-muted: #94a3b8;
-    --accent-red: #ef4444;
-    --accent-green: #10b981;
-    --accent-amber: #f59e0b;
-    --accent-blue: #3b82f6;
-    --accent-purple: #8b5cf6;
+    --bg-dark: #070b14; --bg-panel: #101726; --bg-card: #182236; --border: #273552;
+    --text-main: #f1f5f9; --text-muted: #94a3b8;
+    --red: #ef4444; --green: #10b981; --amber: #f59e0b; --blue: #3b82f6; --purple: #8b5cf6;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
 
-  body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    user-select: none;
-  }
+  header { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 10; }
+  .brand-info { display: flex; flex-direction: column; min-width: 150px; max-width: 205px; }
+  .brand-name { font-weight: 800; font-size: 0.98rem; color: var(--red); text-transform: uppercase; }
+  .brand-myth { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* --- TOP BAR --- */
-  header {
-    background: var(--bg-panel);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    z-index: 10;
-  }
-
-  .brand-info { display: flex; flex-direction: column; min-width: 165px; max-width: 210px; }
-  .brand-name { font-weight: 800; font-size: 1rem; color: var(--accent-red); text-transform: uppercase; letter-spacing: 0.5px; }
-  .brand-myth { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .stats-bar { display: flex; gap: 16px; align-items: center; flex: 1; justify-content: center; flex-wrap: wrap; }
-  .stat-item { display: flex; flex-direction: column; min-width: 96px; }
-  .stat-label { font-size: 0.64rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
-  .stat-value { font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
-  .stat-sub { font-size: 0.67rem; color: var(--text-muted); font-weight: 500; }
-
+  .stats-bar { display: flex; gap: 14px; align-items: center; flex: 1; justify-content: center; flex-wrap: wrap; }
+  .stat-item { display: flex; flex-direction: column; min-width: 88px; }
+  .stat-label { font-size: 0.62rem; text-transform: uppercase; color: var(--text-muted); }
+  .stat-value { font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .stat-sub { font-size: 0.65rem; color: var(--text-muted); }
   .trend { font-size: 0.72rem; font-weight: 800; }
-  .trend-up { color: var(--accent-green); }
-  .trend-down { color: var(--accent-red); }
-  .trend-flat { color: #64748b; }
-
-  .val-money { color: var(--accent-green); }
-  .val-hype { color: var(--accent-amber); }
-  .val-viral { color: #ec4899; }
-  .val-believers { color: var(--accent-red); }
-  .val-factcheck { color: var(--accent-blue); }
-
+  .trend-up { color: var(--green); } .trend-down { color: var(--red); } .trend-flat { color: #64748b; }
+  .val-money { color: var(--green); } .val-hype { color: var(--amber); } .val-viral { color: #ec4899; } .val-bel { color: var(--red); } .val-fc { color: var(--blue); }
   .progress-mini { width: 100%; height: 4px; background: #0f172a; border-radius: 3px; margin-top: 3px; overflow: hidden; }
-  .progress-fill { height: 100%; transition: width 0.3s ease; }
+  .progress-fill { height: 100%; transition: width 0.3s; }
 
   .controls { display: flex; align-items: center; gap: 6px; }
-  .day-badge { background: var(--bg-card); padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; border: 1px solid var(--border); min-width: 78px; text-align: center; }
-  .btn-icon {
-    background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);
-    padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.8rem; transition: 0.2s;
-  }
-  .btn-icon:hover { background: var(--border); }
-  .btn-icon.active { background: var(--accent-red); border-color: var(--accent-red); }
+  .lang-switch { display: flex; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
+  .lang-btn { background: transparent; color: var(--text-muted); border: none; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
+  .lang-btn.active { background: var(--amber); color: #090d16; }
+  .day-badge { background: var(--bg-card); padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid var(--border); min-width: 72px; text-align: center; }
+  .btn-icon { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); padding: 5px 9px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+  .btn-icon.active { background: var(--red); border-color: var(--red); }
 
-  /* --- NEWS TICKER --- */
-  .ticker-wrap {
-    background: #1a0b0e;
-    border-bottom: 1px solid #451218;
-    padding: 5px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.82rem;
-  }
-  .ticker-badge {
-    background: var(--accent-red); color: #fff; font-weight: 800; font-size: 0.68rem;
-    padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.8px;
-  }
-  .ticker-text { color: #fecaca; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ticker-wrap { background: #1a0b0e; border-bottom: 1px solid #451218; padding: 5px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+  .ticker-badge { background: var(--red); color: #fff; font-weight: 800; font-size: 0.68rem; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
+  .ticker-text { color: #fecaca; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* --- MAIN LAYOUT --- */
   main { display: flex; flex: 1; overflow: hidden; }
+  .map-container { flex: 1; position: relative; background: radial-gradient(circle at 50% 45%, #122038 0%, #070b14 100%); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  svg#world-map { width: 100%; height: 100%; }
+  .graticule-line { stroke: #1e293b; stroke-width: 0.6; fill: none; opacity: 0.45; }
+  .country-path { fill: #1b263b; stroke: #334155; stroke-width: 0.7; cursor: pointer; transition: fill 0.3s, stroke 0.15s; }
+  .country-path:hover { stroke: #f8fafc; stroke-width: 1.5; filter: brightness(1.18); }
+  .country-path.in-selected-region { stroke: #fbbf24; stroke-width: 1.25; }
+  .country-path.picked-country { stroke: #ffffff; stroke-width: 1.9; }
+  .route-land { stroke: #94a3b8; stroke-width: 1.4; stroke-dasharray: 3 3; opacity: 0.38; pointer-events: none; }
+  .route-ocean { stroke: #38bdf8; stroke-width: 1.4; stroke-dasharray: 5 5; opacity: 0.38; pointer-events: none; }
+  .route-ocean.unlocked { stroke: #ec4899; stroke-dasharray: 5 3; opacity: 0.85; }
+  .region-hub-dot { fill: #f59e0b; stroke: #090d16; stroke-width: 1.5; pointer-events: none; }
+  .region-label { fill: #f8fafc; font-size: 11px; font-weight: 800; pointer-events: none; text-anchor: middle; paint-order: stroke; stroke: #070b14; stroke-width: 3px; stroke-linejoin: round; }
+  .region-pct { fill: #fde68a; font-size: 10px; font-weight: 700; pointer-events: none; text-anchor: middle; paint-order: stroke; stroke: #070b14; stroke-width: 2.8px; stroke-linejoin: round; }
 
-  /* --- MAP SECTION --- */
-  .map-container {
-    flex: 1;
-    position: relative;
-    background: radial-gradient(circle at center, #131c31 0%, #090d16 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
+  .viral-bubble { position: absolute; background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; border: 2px solid #fff; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.78rem; cursor: pointer; box-shadow: 0 0 18px rgba(239,68,68,0.7); animation: float 2s ease-in-out infinite; z-index: 20; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
 
-  svg#world-map { width: 96%; height: 92%; max-width: 980px; filter: drop-shadow(0 10px 25px rgba(0,0,0,0.5)); }
-
-  /* Realistic World Map Background styling */
-  .map-outline { fill: #111827; stroke: #1e293b; stroke-width: 1; opacity: 0.6; }
-
-  .route-land { stroke: #334155; stroke-width: 1.5; opacity: 0.55; }
-  .route-ocean { stroke: #1e3a8a; stroke-width: 1.2; stroke-dasharray: 4 4; opacity: 0.45; }
-  .route-ocean.unlocked { stroke: #ec4899; stroke-dasharray: 4 3; opacity: 0.8; }
-
-  .region-node { cursor: pointer; transition: all 0.2s ease; }
-  /* We use visual polygons and circles to mark countries/regions */
-  .region-shape { stroke: #475569; stroke-width: 1.2; transition: fill 0.35s ease, stroke 0.2s, transform 0.2s; }
-  .region-node:hover .region-shape { stroke: #fff; stroke-width: 2.2; transform: scale(1.02); }
-  .region-node.selected .region-shape { stroke: var(--accent-amber); stroke-width: 3.0; transform: scale(1.03); }
-  .region-label { fill: #fff; font-size: 11px; font-weight: 700; pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,0.95); text-anchor: middle; }
-  .region-pct { fill: #cbd5e1; font-size: 9.5px; font-weight: 600; pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,0.95); text-anchor: middle; }
-
-  /* Floating Viral Bubble */
-  .viral-bubble {
-    position: absolute;
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
-    color: white;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.78rem;
-    cursor: pointer;
-    box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
-    animation: popIn 0.25s ease, float 2s ease-in-out infinite;
-    z-index: 20;
-  }
-  @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-  /* Legend */
-  .map-legend {
-    position: absolute; top: 12px; left: 12px;
-    background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border);
-    padding: 7px 10px; border-radius: 8px; font-size: 0.7rem; color: var(--text-muted);
-    display: flex; flex-direction: column; gap: 3px;
-  }
-
-  /* Compact Region Info Card */
-  .region-card {
-    position: absolute;
-    bottom: 12px; left: 12px;
-    background: rgba(17, 24, 39, 0.94);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    width: 222px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-  }
-  .region-card h3 { font-size: 0.88rem; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .map-legend { position: absolute; top: 12px; left: 12px; background: rgba(16,23,38,0.88); border: 1px solid var(--border); padding: 7px 10px; border-radius: 8px; font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; z-index: 5; }
+  .region-card { position: absolute; bottom: 12px; left: 12px; background: rgba(16,23,38,0.95); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; width: 244px; box-shadow: 0 8px 24px rgba(0,0,0,0.65); z-index: 5; }
+  .region-card h3 { font-size: 0.88rem; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .region-sub-country { font-size: 0.7rem; color: #38bdf8; font-weight: 600; margin-bottom: 6px; }
   .region-stat { display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--text-muted); margin-bottom: 3px; }
   .region-stat span:last-child { color: var(--text-main); font-weight: 600; }
-
   .rc-actions { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-  .btn-action {
-    width: 100%; padding: 6px; border: none; border-radius: 5px;
-    font-weight: 700; cursor: pointer; font-size: 0.71rem; transition: 0.2s; color: #fff;
-  }
-  .btn-ad { background: var(--accent-blue); }
-  .btn-ad:hover:not(:disabled) { background: #2563eb; }
-  .btn-buyout { background: var(--accent-purple); }
-  .btn-buyout:hover:not(:disabled) { background: #7c3aed; }
+  .btn-action { width: 100%; padding: 6px; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; font-size: 0.71rem; color: #fff; }
+  .btn-ad { background: var(--blue); } .btn-buyout { background: var(--purple); }
   .btn-action:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
-  .monopoly-badge { background: var(--accent-purple); color: #fff; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; }
+  .monopoly-badge { background: var(--purple); color: #fff; font-size: 0.58rem; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; }
 
-  /* --- SIDEBAR --- */
-  aside {
-    width: 390px;
-    background: var(--bg-panel);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-  }
-
+  aside { width: 390px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
   .tabs { display: flex; border-bottom: 1px solid var(--border); }
-  .tab-btn {
-    flex: 1; padding: 11px 6px; background: transparent; border: none; color: var(--text-muted);
-    font-weight: 700; font-size: 0.78rem; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s;
-  }
-  .tab-btn:hover { color: var(--text-main); }
-  .tab-btn.active { color: var(--accent-red); border-bottom-color: var(--accent-red); background: rgba(239, 68, 68, 0.06); }
-
+  .tab-btn { flex: 1; padding: 11px 5px; background: transparent; border: none; color: var(--text-muted); font-weight: 700; font-size: 0.75rem; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab-btn.active { color: var(--red); border-bottom-color: var(--red); background: rgba(239,68,68,0.06); }
   .tab-content { flex: 1; overflow-y: auto; padding: 12px 14px; display: none; flex-direction: column; gap: 10px; }
   .tab-content.active { display: flex; }
-
-  .region-banner {
-    background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);
-    padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; color: #fde68a;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
-  .section-title { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.8px; margin-top: 4px; font-weight: 700; }
-
-  .upgrade-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .upgrade-card.bought { border-color: var(--accent-green); background: rgba(16, 185, 129, 0.07); }
+  .region-banner { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; color: #fde68a; display: flex; justify-content: space-between; }
+  .section-title { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+  .upgrade-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .upgrade-card.bought { border-color: var(--green); background: rgba(16,185,129,0.07); }
   .upgrade-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
   .upgrade-title { font-weight: 700; font-size: 0.84rem; }
-  .upgrade-lvl { font-size: 0.68rem; background: #0f172a; color: var(--accent-amber); padding: 2px 6px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
-  .upgrade-cost { font-weight: 700; font-size: 0.83rem; color: var(--accent-green); }
+  .upgrade-lvl { font-size: 0.68rem; background: #0f172a; color: var(--amber); padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+  .upgrade-cost { font-weight: 700; font-size: 0.83rem; color: var(--green); }
   .upgrade-desc { font-size: 0.74rem; color: var(--text-muted); line-height: 1.35; }
-  .upgrade-btn {
-    margin-top: 3px; padding: 6px; border-radius: 6px; border: none; font-weight: 700; font-size: 0.78rem;
-    cursor: pointer; background: var(--accent-blue); color: #fff; transition: 0.2s;
-  }
-  .upgrade-btn:hover:not(:disabled) { background: #2563eb; }
+  .upgrade-btn { margin-top: 3px; padding: 6px; border-radius: 6px; border: none; font-weight: 700; font-size: 0.78rem; cursor: pointer; background: var(--blue); color: #fff; }
   .upgrade-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
-  .upgrade-card.bought .upgrade-btn { background: var(--accent-green); color: #064e3b; }
+  .upgrade-card.bought .upgrade-btn { background: var(--green); color: #064e3b; }
 
-  /* Headline Generator */
-  .headline-box {
-    background: #0f172a; border: 1px dashed var(--accent-amber); border-radius: 8px;
-    padding: 12px; text-align: center; font-weight: 700; font-size: 0.9rem; color: #fef3c7; line-height: 1.4;
-  }
+  .headline-box { background: #0f172a; border: 1px dashed var(--amber); border-radius: 8px; padding: 12px; text-align: center; font-weight: 700; font-size: 0.9rem; color: #fef3c7; line-height: 1.4; }
   .select-group { display: flex; flex-direction: column; gap: 4px; }
   .select-group label { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
-  select {
-    background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);
-    padding: 8px 10px; border-radius: 6px; font-size: 0.82rem; outline: none;
-  }
-  .btn-publish {
-    padding: 11px; background: var(--accent-amber); color: #000; font-weight: 800; border: none;
-    border-radius: 8px; cursor: pointer; font-size: 0.86rem; transition: 0.2s; text-transform: uppercase;
-  }
-  .btn-publish:hover:not(:disabled) { background: #d97706; color: #fff; }
+  select, .input-field { background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; font-size: 0.84rem; outline: none; width: 100%; }
+  .btn-publish { padding: 11px; background: var(--amber); color: #000; font-weight: 800; border: none; border-radius: 8px; cursor: pointer; font-size: 0.86rem; text-transform: uppercase; }
   .btn-publish:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
 
-  /* --- MODALS & START PAGE --- */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(5, 8, 15, 0.94); backdrop-filter: blur(8px);
-    display: flex; align-items: center; justify-content: center; z-index: 100;
-  }
-  .modal {
-    background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px;
-    padding: 24px; width: 92%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.65);
-    display: flex; flex-direction: column; gap: 13px;
-  }
-
-  /* START PAGE SPECIFIC */
-  .start-logo-container {
-    width: 100%; display: flex; justify-content: center; margin-bottom: -5px;
-  }
-  .start-logo-svg {
-    width: 240px; height: 240px; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.15));
-  }
-  .modal p { font-size: 0.84rem; color: var(--text-muted); text-align: center; line-height: 1.42; }
-
-  .input-field {
-    width: 100%; padding: 9px 12px; background: var(--bg-dark); border: 1px solid var(--border);
-    border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none;
-  }
-  .input-field:focus { border-color: var(--accent-red); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(5,8,15,0.94); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; width: 92%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; max-height: 96vh; overflow-y: auto; }
+  .modal-top-row { display: flex; justify-content: space-between; align-items: center; }
+  .start-logo-container { width: 100%; display: flex; justify-content: center; }
+  .start-logo-img { width: 165px; height: 165px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+  .modal h1 { font-size: 1.4rem; color: var(--red); text-align: center; letter-spacing: 1px; }
+  .modal-slogan { text-align: center; color: var(--amber); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-top: -6px; }
+  .modal p { font-size: 0.82rem; color: var(--text-muted); text-align: center; line-height: 1.4; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; }
-  .preset-chip {
-    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
-    padding: 5px 10px; border-radius: 20px; font-size: 0.76rem; cursor: pointer; transition: 0.2s;
-  }
-  .preset-chip:hover { border-color: var(--accent-red); color: #fff; }
-  .btn-start {
-    padding: 12px; background: var(--accent-red); color: #fff; border: none; border-radius: 8px;
-    font-weight: 800; font-size: 0.95rem; cursor: pointer; text-transform: uppercase;
-    transition: background 0.2s, transform 0.1s;
-  }
-  .btn-start:hover { background: #dc2626; transform: translateY(-1px); }
-  .btn-start:active { transform: translateY(0); }
+  .preset-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 20px; font-size: 0.74rem; cursor: pointer; }
+  .preset-chip:hover { border-color: var(--red); color: #fff; }
+  .btn-start { padding: 11px; background: var(--red); color: #fff; border: none; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; text-transform: uppercase; }
 
-  /* --- TV STUDIO MODAL --- */
-  .studio-modal {
-    max-width: 680px;
-    padding: 0;
-    overflow: hidden;
-    border: 2px solid #f59e0b;
-  }
-  .studio-modal.mode-debate {
-    border-color: #ef4444;
-  }
-  .studio-stage {
-    position: relative;
-    height: 235px;
-    overflow: hidden;
-    border-bottom: 3px solid #1e293b;
-    transition: background 0.4s ease;
-  }
-  .studio-stage.theme-morning {
-    background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 42%, #f59e0b 86%, #ea580c 100%);
-  }
-  .studio-stage.theme-debate {
-    background: radial-gradient(circle at 20% 25%, rgba(239, 68, 68, 0.45), transparent 55%),
-                radial-gradient(circle at 80% 25%, rgba(59, 130, 246, 0.45), transparent 55%),
-                linear-gradient(180deg, #090d16 0%, #1e1b4b 100%);
-  }
-  .studio-city {
-    position: absolute; bottom: 45px; left: 0; right: 0; height: 95px;
-    opacity: 0.24;
-    background: repeating-linear-gradient(90deg, #0f172a 0 28px, transparent 28px 42px, #0f172a 42px 64px, transparent 64px 72px);
-  }
-  .studio-onair {
-    position: absolute; top: 12px; left: 16px;
-    background: #dc2626; color: #fff; font-weight: 900; font-size: 0.74rem;
-    padding: 4px 10px; border-radius: 4px; letter-spacing: 1.5px;
-    box-shadow: 0 0 14px rgba(220, 38, 38, 0.9);
-    animation: pulse 1.2s infinite;
-    z-index: 4;
-  }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  .studio-show-banner {
-    position: absolute; top: 12px; right: 16px;
-    background: rgba(15, 23, 42, 0.88); color: #fde68a; font-weight: 800; font-size: 0.73rem;
-    padding: 4px 12px; border-radius: 20px; border: 1px solid #f59e0b;
-    z-index: 4;
-  }
-
-  /* HTML Screen behind hosts */
-  .studio-screen {
-    position: absolute;
-    top: 38px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 255px;
-    min-height: 76px;
-    background: rgba(15, 23, 42, 0.94);
-    border: 2.5px solid #38bdf8;
-    border-radius: 10px;
-    padding: 8px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
-    z-index: 2;
-  }
-  .studio-screen-title {
-    font-size: 0.76rem;
-    font-weight: 900;
-    color: #f59e0b;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .studio-screen-myth {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #e2e8f0;
-    line-height: 1.25;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-
+  .studio-modal { max-width: 680px; padding: 0; overflow: hidden; border: 2px solid var(--amber); }
+  .studio-modal.mode-debate { border-color: var(--red); }
+  .studio-stage { position: relative; height: 220px; overflow: hidden; border-bottom: 3px solid #1e293b; }
+  .studio-stage.theme-morning { background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 42%, #f59e0b 86%, #ea580c 100%); }
+  .studio-stage.theme-debate { background: radial-gradient(circle at 20% 25%, rgba(239,68,68,0.45), transparent 55%), radial-gradient(circle at 80% 25%, rgba(59,130,246,0.45), transparent 55%), linear-gradient(180deg, #090d16 0%, #1e1b4b 100%); }
+  .studio-city { position: absolute; bottom: 45px; left: 0; right: 0; height: 90px; opacity: 0.24; background: repeating-linear-gradient(90deg, #0f172a 0 28px, transparent 28px 42px, #0f172a 42px 64px, transparent 64px 72px); }
+  .studio-onair { position: absolute; top: 12px; left: 16px; background: #dc2626; color: #fff; font-weight: 900; font-size: 0.74rem; padding: 4px 10px; border-radius: 4px; letter-spacing: 1.5px; z-index: 4; }
+  .studio-show-banner { position: absolute; top: 12px; right: 16px; background: rgba(15,23,42,0.88); color: #fde68a; font-weight: 800; font-size: 0.73rem; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--amber); z-index: 4; }
+  .studio-screen { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); width: 255px; min-height: 72px; background: rgba(15,23,42,0.94); border: 2.5px solid #38bdf8; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 2; }
+  .studio-screen-title { font-size: 0.73rem; font-weight: 900; color: var(--amber); text-transform: uppercase; margin-bottom: 3px; }
+  .studio-screen-myth { font-size: 0.76rem; font-weight: 600; color: #e2e8f0; line-height: 1.25; }
   .studio-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
-  .talking { animation: talkBob 0.2s ease-in-out infinite alternate; transform-origin: center; }
-  @keyframes talkBob { from { transform: translateY(0px); } to { transform: translateY(-4px); } }
-
-  .studio-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-panel); }
-  .studio-dialogue {
-    background: #0f172a; border-left: 4px solid var(--accent-amber);
-    padding: 12px 14px; border-radius: 6px; font-size: 0.88rem; line-height: 1.45; color: #f8fafc;
-  }
-  .studio-dialogue strong { color: var(--accent-amber); }
-
+  .talking { animation: talkBob 0.2s ease-in-out infinite alternate; }
+  @keyframes talkBob { from{transform:translateY(0)} to{transform:translateY(-4px)} }
+  .studio-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 11px; }
+  .studio-dialogue { background: #0f172a; border-left: 4px solid var(--amber); padding: 11px 14px; border-radius: 6px; font-size: 0.87rem; line-height: 1.45; }
+  .studio-dialogue strong { color: var(--amber); }
   .debate-options { display: flex; flex-direction: column; gap: 8px; }
-  .debate-btn {
-    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
-    padding: 10px 13px; border-radius: 8px; text-align: left; cursor: pointer; transition: 0.2s;
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  .debate-btn:hover:not(:disabled) { border-color: var(--accent-amber); background: #232f47; }
+  .debate-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 10px 13px; border-radius: 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+  .debate-btn:hover:not(:disabled) { border-color: var(--amber); background: #232f47; }
   .debate-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .debate-btn-title { font-weight: 700; font-size: 0.85rem; line-height: 1.35; }
-  .debate-btn-sub { font-size: 0.73rem; color: var(--text-muted); }
-  .debate-btn.decline { border-color: #7f1d1d; background: rgba(127, 29, 29, 0.2); }
-  .debate-btn.decline:hover { border-color: var(--accent-red); }
-
+  .debate-btn-title { font-weight: 700; font-size: 0.84rem; }
+  .debate-btn-sub { font-size: 0.72rem; color: var(--text-muted); }
+  .debate-btn.decline { border-color: #7f1d1d; background: rgba(127,29,29,0.2); }
   .hidden { display: none !important; }
 </style>
 </head>
 <body>
 
-<!-- START SCREEN WITH LOGO -->
 <div class="modal-overlay" id="start-modal">
-  <div class="modal" style="max-width: 540px;">
-    <!-- Render 3rd Logo: FLAT EARTH IN LIVE BROADCAST IN HTML/SVG -->
+  <div class="modal">
+    <div class="modal-top-row">
+      <span style="font-size:0.74rem; color:var(--text-muted); font-weight:700;">FAKE IT TILL YOU TAKE IT</span>
+      <div class="lang-switch">
+        <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
+      </div>
+    </div>
+
     <div class="start-logo-container">
-      <svg class="start-logo-svg" viewBox="0 0 320 320">
-        <!-- Badge back / sound waves -->
-        <circle cx="160" cy="160" r="140" fill="none" stroke="#ef4444" stroke-width="12" stroke-dasharray="14 10" opacity="0.45"/>
-        <circle cx="160" cy="160" r="115" fill="none" stroke="#f59e0b" stroke-width="8" stroke-dasharray="8 6" opacity="0.6"/>
-        
-        <!-- Big red sign badge "LIE" -->
-        <polygon points="120,40 200,40 188,76 108,76" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"/>
-        <text x="148" y="68" fill="#ffffff" font-family="'Impact', Arial, sans-serif" font-weight="900" font-size="28" text-anchor="middle" transform="skewX(-10)">LIE</text>
-        
-        <!-- Earth Disk at Bottom Base -->
-        <ellipse cx="160" cy="190" rx="90" ry="40" fill="#1e3a8a" stroke="#ffffff" stroke-width="3"/>
-        <!-- Simplified Earth Landmasses -->
-        <path d="M110 182 C105 186, 95 194, 105 198 C120 204, 130 196, 125 186 Z M170 178 C185 174, 205 180, 210 195 C215 210, 190 220, 175 215 C160 210, 165 195, 150 190 C140 186, 155 182, 170 178 Z" fill="#eab308" opacity="0.9"/>
-        <!-- Antarctic border -->
-        <ellipse cx="160" cy="190" rx="84" ry="34" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="4 6" opacity="0.8"/>
-        
-        <!-- Retro studio broadcast microphone on stand -->
-        <rect x="156" y="152" width="8" height="24" fill="#94a3b8" stroke="#1e293b" stroke-width="2"/>
-        <path d="M150 176 L170 176 L160 190 Z" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
-        <rect x="142" y="116" width="36" height="36" rx="18" fill="#cbd5e1" stroke="#1e293b" stroke-width="2.5"/>
-        <path d="M142 134 L178 134 M147 122 L173 122 M147 146 L173 146" stroke="#1e293b" stroke-width="2"/>
-        <!-- Mic cage grill -->
-        <line x1="151" y1="116" x2="151" y2="152" stroke="#1e293b" stroke-width="1.5"/>
-        <line x1="160" y1="116" x2="160" y2="152" stroke="#1e293b" stroke-width="2"/>
-        <line x1="169" y1="116" x2="169" y2="152" stroke="#1e293b" stroke-width="1.5"/>
-        
-        <!-- Big text "BROADCAST" in tabloid heavy font style -->
-        <g id="broadcast-3d-text">
-          <text x="160" y="112" fill="#090d16" font-family="'Impact', Arial, sans-serif" font-weight="900" font-size="34" letter-spacing="1" text-anchor="middle" stroke="#000" stroke-width="5" stroke-linejoin="round">BROADCAST</text>
-          <text x="160" y="110" fill="#fde68a" font-family="'Impact', Arial, sans-serif" font-weight="900" font-size="34" letter-spacing="1" text-anchor="middle">BROADCAST</text>
-        </g>
-        
-        <!-- Curved bottom ribbon/label FAKE IT TILL YOU TAKE IT -->
-        <path d="M60 226 Q160 264 260 226" fill="none" id="textPath-ribbon"/>
-        <rect x="56" y="222" width="208" height="22" rx="11" fill="#ea580c" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
-        <text x="160" y="237" fill="#ffffff" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="900" text-anchor="middle">FAKE IT TILL YOU TAKE IT</text>
-      </svg>
+      <img src="lie_broadcast_logo.jpeg" alt="Lie Broadcast" class="start-logo-img" onerror="this.style.display='none'">
     </div>
 
     <h1>LIE BROADCAST</h1>
-    <div class="modal-slogan" style="margin-top:-6px;">Симулятор Медиаимперии</div>
-    
-    <p>Докажи всем свою правду. Борись с высоким Образованием регионов, пробивай потолок рекламных охватов, уворачивайся от фактчекинга и дебатируй с учёными.</p>
-    
+    <div class="modal-slogan" id="start-subtitle">Симулятор Медиаимперии</div>
+    <p id="start-desc"></p>
+
     <div class="select-group">
-      <label>Твоё имя (для прямых эфиров):</label>
+      <label id="lbl-player"></label>
       <input type="text" id="input-player" class="input-field" value="Вячеслав" maxlength="20">
     </div>
-
     <div class="select-group">
-      <label>Название твоего медиахолдинга:</label>
+      <label id="lbl-media"></label>
       <input type="text" id="input-media" class="input-field" value="Правда-Матка ТВ" maxlength="25">
     </div>
-
     <div class="select-group">
-      <label>Твой главный миф (впиши или выбери ниже):</label>
-      <input type="text" id="input-myth" class="input-field" value="Земля на самом деле плоская" maxlength="45">
+      <label id="lbl-myth"></label>
+      <input type="text" id="input-myth" class="input-field" value="Земля на самом деле плоская" maxlength="55">
     </div>
-
-    <div class="presets">
-      <button class="preset-chip" onclick="setMyth('Земля на самом деле плоская')">🌍 Земля плоская</button>
-      <button class="preset-chip" onclick="setMyth('Голуби — это дроны правительства')">🐦 Голуби — дроны</button>
-      <button class="preset-chip" onclick="setMyth('Луна — это голограмма')">🌙 Луна — голограмма</button>
-      <button class="preset-chip" onclick="setMyth('Коты управляют мировой биржей')">🐱 Коты правят биржей</button>
-    </div>
-
-    <button class="btn-start" onclick="startGame()">Запустить вещание</button>
+    <div class="presets" id="presets-container"></div>
+    <button class="btn-start" id="btn-start-game" onclick="startGame()"></button>
   </div>
 </div>
 
-<!-- TV STUDIO MODAL (INTERVIEWS + SCIENTIST DEBATES) -->
 <div class="modal-overlay hidden" id="debate-modal">
   <div class="modal studio-modal" id="studio-modal-box">
     <div class="studio-stage theme-morning" id="studio-stage">
       <div class="studio-city"></div>
       <div class="studio-onair">● ON AIR</div>
-      <div class="studio-show-banner" id="studio-show-name">☀️ ДОБРОЕ УТРО, ПЛАНЕТА!</div>
-
-      <!-- HTML Screen with wrapping text -->
+      <div class="studio-show-banner" id="studio-show-name"></div>
       <div class="studio-screen">
-        <div class="studio-screen-title" id="studio-screen-title">ПРЯМОЙ ЭФИР</div>
-        <div class="studio-screen-myth" id="studio-screen-myth">«Земля на самом деле плоская»</div>
+        <div class="studio-screen-title" id="studio-screen-title"></div>
+        <div class="studio-screen-myth" id="studio-screen-myth"></div>
       </div>
-
       <svg class="studio-svg" viewBox="0 0 680 235">
-        <!-- PLAYER CHARACTER (Left) -->
         <g id="char-player">
           <path d="M98 188 C98 148, 120 138, 146 138 C172 138, 194 148, 194 188 Z" fill="#1e293b"/>
           <polygon points="135,138 157,138 146,162" fill="#f8fafc"/>
           <polygon points="143,144 149,144 152,175 146,182 140,175" fill="#ef4444"/>
           <rect x="137" y="124" width="18" height="18" rx="6" fill="#f3c69f"/>
-          <circle cx="116" cy="104" r="7" fill="#f3c69f"/>
-          <circle cx="176" cy="104" r="7" fill="#f3c69f"/>
+          <circle cx="116" cy="104" r="7" fill="#f3c69f"/><circle cx="176" cy="104" r="7" fill="#f3c69f"/>
           <rect x="118" y="70" width="56" height="62" rx="26" fill="#fbd3b0"/>
           <path d="M115 95 C112 66, 132 54, 154 57 C174 59, 180 74, 177 95 C173 81, 162 75, 146 76 C132 77, 121 82, 115 95 Z" fill="#1f2937"/>
-          <path d="M126 62 C138 50, 162 52, 173 66 C160 62, 140 62, 126 62 Z" fill="#374151"/>
-          <path d="M128 92 Q135 88 141 92" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M151 92 Q157 88 164 92" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <circle cx="135" cy="101" r="5" fill="#ffffff"/>
-          <circle cx="136" cy="101" r="2.8" fill="#0f172a"/>
-          <circle cx="137" cy="99.5" r="1" fill="#ffffff"/>
-          <circle cx="157" cy="101" r="5" fill="#ffffff"/>
-          <circle cx="158" cy="101" r="2.8" fill="#0f172a"/>
-          <circle cx="159" cy="99.5" r="1" fill="#ffffff"/>
-          <path d="M146 104 L144 111 L148 111" stroke="#d49a6a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="135" cy="101" r="5" fill="#fff"/><circle cx="136" cy="101" r="2.8" fill="#0f172a"/>
+          <circle cx="157" cy="101" r="5" fill="#fff"/><circle cx="158" cy="101" r="2.8" fill="#0f172a"/>
           <path d="M137 118 Q146 125 156 118" stroke="#7c2d12" stroke-width="2.5" stroke-linecap="round" fill="none"/>
         </g>
-
-        <!-- HOST / SCIENTIST CHARACTER (Right) -->
         <g id="char-host">
           <path d="M486 188 C486 148, 508 138, 534 138 C560 138, 582 148, 582 188 Z" fill="#1d4ed8" id="host-jacket"/>
           <polygon points="523,138 545,138 534,162" fill="#f8fafc"/>
           <polygon points="531,144 537,144 539,176 534,182 529,176" fill="#0f172a"/>
           <rect x="525" y="124" width="18" height="18" rx="6" fill="#eac09e"/>
-          <circle cx="504" cy="104" r="7" fill="#eac09e"/>
-          <circle cx="564" cy="104" r="7" fill="#eac09e"/>
+          <circle cx="504" cy="104" r="7" fill="#eac09e"/><circle cx="564" cy="104" r="7" fill="#eac09e"/>
           <rect x="506" y="70" width="56" height="62" rx="26" fill="#f7cfa8"/>
           <path d="M503 98 C500 66, 518 55, 536 56 C556 57, 569 70, 565 98 C561 84, 554 77, 540 75 C525 73, 513 80, 503 98 Z" fill="#475569"/>
-          <path d="M510 74 C522 60, 548 60, 559 73 C544 68, 526 68, 510 74 Z" fill="#64748b"/>
-          <path d="M516 91 Q523 88 529 91" stroke="#334155" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-          <path d="M539 91 Q545 88 552 91" stroke="#334155" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-          <circle cx="523" cy="101" r="4.8" fill="#ffffff"/>
-          <circle cx="522" cy="101" r="2.7" fill="#0f172a"/>
-          <circle cx="523" cy="99.5" r="1" fill="#ffffff"/>
-          <circle cx="545" cy="101" r="4.8" fill="#ffffff"/>
-          <circle cx="544" cy="101" r="2.7" fill="#0f172a"/>
-          <circle cx="545" cy="99.5" r="1" fill="#ffffff"/>
-          <rect x="513" y="94" width="19" height="14" rx="4" fill="rgba(186, 230, 253, 0.32)" stroke="#0f172a" stroke-width="2.2"/>
-          <rect x="536" y="94" width="19" height="14" rx="4" fill="rgba(186, 230, 253, 0.32)" stroke="#0f172a" stroke-width="2.2"/>
+          <circle cx="523" cy="101" r="4.8" fill="#fff"/><circle cx="522" cy="101" r="2.7" fill="#0f172a"/>
+          <circle cx="545" cy="101" r="4.8" fill="#fff"/><circle cx="544" cy="101" r="2.7" fill="#0f172a"/>
+          <rect x="513" y="94" width="19" height="14" rx="4" fill="rgba(186,230,253,0.32)" stroke="#0f172a" stroke-width="2.2"/>
+          <rect x="536" y="94" width="19" height="14" rx="4" fill="rgba(186,230,253,0.32)" stroke="#0f172a" stroke-width="2.2"/>
           <line x1="532" y1="100" x2="536" y2="100" stroke="#0f172a" stroke-width="2.2"/>
-          <line x1="506" y1="99" x2="513" y2="100" stroke="#0f172a" stroke-width="2"/>
-          <line x1="555" y1="100" x2="562" y2="99" stroke="#0f172a" stroke-width="2"/>
-          <path d="M534 104 L536 111 L532 111" stroke="#c89268" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <path d="M525 119 Q534 122 543 119" stroke="#7c2d12" stroke-width="2.4" stroke-linecap="round" fill="none"/>
         </g>
-
-        <!-- Studio Desk -->
         <rect x="55" y="184" width="570" height="52" rx="10" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-        <rect x="75" y="196" width="530" height="4" rx="2" fill="#38bdf8" opacity="0.45"/>
-
-        <!-- Mugs & Desk Microphones -->
         <rect x="205" y="164" width="16" height="20" rx="3" fill="#f59e0b"/>
-        <path d="M221 169 C226 169, 226 179, 221 179" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
         <rect x="458" y="164" width="16" height="20" rx="3" fill="#38bdf8"/>
-        <path d="M458 169 C453 169, 453 179, 458 179" stroke="#38bdf8" stroke-width="2.5" fill="none"/>
-        <line x1="175" y1="184" x2="185" y2="152" stroke="#94a3b8" stroke-width="3"/>
-        <circle cx="186" cy="150" r="5.5" fill="#0f172a" stroke="#64748b" stroke-width="1.5"/>
-        <line x1="505" y1="184" x2="495" y2="152" stroke="#94a3b8" stroke-width="3"/>
-        <circle cx="494" cy="150" r="5.5" fill="#0f172a" stroke="#64748b" stroke-width="1.5"/>
       </svg>
     </div>
-
     <div class="studio-body">
       <div class="studio-dialogue" id="debate-desc"></div>
       <div class="debate-options" id="debate-options"></div>
@@ -561,1454 +227,1036 @@
   </div>
 </div>
 
-<!-- ENDGAME MODAL -->
 <div class="modal-overlay hidden" id="end-modal">
   <div class="modal">
-    <h1 id="end-title">ПОБЕДА!</h1>
+    <h1 id="end-title"></h1>
     <p id="end-desc"></p>
-    <button class="btn-start" onclick="location.reload()">Сыграть ещё раз</button>
+    <button class="btn-start" id="btn-replay" onclick="location.reload()"></button>
   </div>
 </div>
 
-<!-- HEADER -->
 <header>
   <div class="brand-info">
-    <div class="brand-name" id="ui-media-name">ПРАВДА-МАТКА ТВ</div>
-    <div class="brand-myth" id="ui-myth-text">«Земля на самом деле плоская»</div>
+    <div class="brand-name" id="ui-media-name"></div>
+    <div class="brand-myth" id="ui-myth-text"></div>
   </div>
-
   <div class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-label">Бюджет</span>
-      <span class="stat-value val-money"><span id="ui-money">$150</span> <span class="trend" id="tr-money"></span></span>
-      <span class="stat-sub" id="ui-income">+$0/дн</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Хайп (Множитель $)</span>
-      <span class="stat-value val-hype"><span id="ui-hype">45%</span> <span class="trend" id="tr-hype"></span></span>
-      <div class="progress-mini"><div class="progress-fill" id="bar-hype" style="width:45%; background: var(--accent-amber);"></div></div>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Вирусность</span>
-      <span class="stat-value val-viral"><span id="ui-viral">10 / 45</span> <span class="trend" id="tr-viral"></span></span>
-      <span class="stat-sub" id="ui-ocean-status">Океаны закрыты</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Верующие</span>
-      <span class="stat-value val-believers"><span id="ui-believers">0.0%</span> <span class="trend" id="tr-bel"></span></span>
-      <div class="progress-mini"><div class="progress-fill" id="bar-believers" style="width:0%; background: var(--accent-red);"></div></div>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Монополия</span>
-      <span class="stat-value" style="color: var(--accent-purple);" id="ui-monopoly">0 / 8</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Фактчекинг</span>
-      <span class="stat-value val-factcheck"><span id="ui-factcheck">0%</span> <span class="trend" id="tr-fc"></span></span>
-      <div class="progress-mini"><div class="progress-fill" id="bar-factcheck" style="width:0%; background: var(--accent-blue);"></div></div>
-    </div>
+    <div class="stat-item"><span class="stat-label" id="lbl-money"></span><span class="stat-value val-money"><span id="ui-money">$150</span><span class="trend" id="tr-money"></span></span><span class="stat-sub" id="ui-income">+$0</span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-hype"></span><span class="stat-value val-hype"><span id="ui-hype">45%</span><span class="trend" id="tr-hype"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-hype" style="width:45%;background:var(--amber)"></div></div></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-viral"></span><span class="stat-value val-viral"><span id="ui-viral">10/45</span><span class="trend" id="tr-viral"></span></span><span class="stat-sub" id="ui-ocean-status"></span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-believers"></span><span class="stat-value val-bel"><span id="ui-believers">0.0%</span><span class="trend" id="tr-bel"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-believers" style="width:0%;background:var(--red)"></div></div></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-monopoly"></span><span class="stat-value" style="color:var(--purple)" id="ui-monopoly">0/8</span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-fc"></span><span class="stat-value val-fc"><span id="ui-factcheck">0%</span><span class="trend" id="tr-fc"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-factcheck" style="width:0%;background:var(--blue)"></div></div></div>
   </div>
-
   <div class="controls">
-    <div class="day-badge" id="ui-day">День 1</div>
-    <button class="btn-icon active" id="btn-music" onclick="toggleMusic()" title="Музыка и звуки">🎵</button>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+      <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
+    </div>
+    <div class="day-badge" id="ui-day">1</div>
+    <button class="btn-icon active" id="btn-music" onclick="toggleMusic()">🎵</button>
+    <button class="btn-icon" id="btn-genre" onclick="toggleGenre()" title="Jazz / Phonk">🎷</button>
     <button class="btn-icon" id="btn-pause" onclick="togglePause()">⏸</button>
     <button class="btn-icon" id="btn-speed" onclick="toggleSpeed()">1x</button>
   </div>
 </header>
 
-<!-- NEWS TICKER -->
 <div class="ticker-wrap">
-  <span class="ticker-badge">ЭФИР</span>
-  <div class="ticker-text" id="ui-ticker">Твой канал только запустился. Прокачай каналы в регионе, чтобы пробить потолок охвата!</div>
+  <span class="ticker-badge" id="ticker-badge"></span>
+  <div class="ticker-text" id="ui-ticker"></div>
 </div>
 
-<!-- MAIN CONTENT -->
 <main>
-  <!-- MAP (Realistic SVG World Outline with Country Landmarks) -->
   <div class="map-container" id="map-container">
     <div class="map-legend">
-      <div>— Суша (переход свободный)</div>
-      <div style="color:#60a5fa;">--- Океан (нужна Вирусность 45 или Таргет)</div>
+      <div id="leg-land"></div>
+      <div id="leg-ocean" style="color:#60a5fa;"></div>
     </div>
-
-    <svg id="world-map" viewBox="0 0 920 490">
-      <!-- Realistic Continental Landmass Silhouettes to create immersive world shape -->
-      <g class="map-outline">
-        <!-- North America -->
-        <path d="M40 70 L140 30 L220 50 L270 40 L310 90 L260 160 L180 180 L130 190 L110 210 L80 190 L60 130 Z"/>
-        <!-- South America -->
-        <path d="M195 240 L265 240 L305 280 L350 340 L290 420 L270 460 L240 460 L210 390 L180 320 L185 270 Z"/>
-        <!-- Eurasia / Africa -->
-        <path d="M360 80 L520 60 L680 70 L820 60 L850 110 L880 160 L780 200 L710 260 L650 210 L580 190 L520 220 L480 200 L390 190 Z"/>
-        <!-- Africa -->
-        <path d="M385 240 L455 210 L520 230 L530 260 L570 300 L545 365 L525 410 L485 450 L450 450 L415 390 L365 310 L365 260 Z"/>
-        <!-- Australia -->
-        <path d="M720 380 L820 370 L850 420 L780 460 L720 440 Z"/>
-        <!-- Greenland -->
-        <polygon points="340,30 380,25 410,40 370,60 330,55" fill="#1e293b"/>
-      </g>
-
+    <svg id="world-map" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid meet">
+      <g id="map-graticule"></g>
+      <g id="map-countries"></g>
       <g id="map-routes"></g>
-      <g id="map-regions"></g>
+      <g id="map-markers"></g>
     </svg>
-
-    <!-- Compact Selected Region Info -->
-    <div class="region-card" id="region-card">
-      <h3>
-        <span id="rc-name">Европа</span>
-        <span class="monopoly-badge hidden" id="rc-badge">МОНОПОЛИЯ</span>
-      </h3>
-      <div class="region-stat"><span>Население:</span><span id="rc-pop">750M</span></div>
-      <div class="region-stat"><span>Образование:</span><span id="rc-edu">82%</span></div>
-      <div class="region-stat"><span>Скорость инфо:</span><span id="rc-speed">1.30x</span></div>
-      <div class="region-stat"><span>Цены рекламы:</span><span id="rc-costmult">1.40x</span></div>
-      <div class="region-stat"><span>Верят / Потолок:</span><span id="rc-bel">0.5% / 5%</span></div>
-      <div class="region-stat"><span>Доход/день:</span><span id="rc-inc">$0</span></div>
+    <div class="region-card">
+      <h3><span id="rc-name"></span><span class="monopoly-badge hidden" id="rc-badge"></span></h3>
+      <div class="region-sub-country" id="rc-country"></div>
+      <div class="region-stat"><span id="rc-lbl-pop"></span><span id="rc-pop"></span></div>
+      <div class="region-stat"><span id="rc-lbl-edu"></span><span id="rc-edu"></span></div>
+      <div class="region-stat"><span id="rc-lbl-speed"></span><span id="rc-speed"></span></div>
+      <div class="region-stat"><span id="rc-lbl-cost"></span><span id="rc-costmult"></span></div>
+      <div class="region-stat"><span id="rc-lbl-bel"></span><span id="rc-bel"></span></div>
+      <div class="region-stat"><span id="rc-lbl-inc"></span><span id="rc-inc"></span></div>
       <div class="rc-actions">
-        <button class="btn-action btn-ad" id="rc-ad" onclick="buyRegionalAd()">Таргет ($180)</button>
-        <button class="btn-action btn-buyout" id="rc-buyout" onclick="buyoutRegion()">Выкупить СМИ ($900)</button>
+        <button class="btn-action btn-ad" id="rc-ad" onclick="buyRegionalAd()"></button>
+        <button class="btn-action btn-buyout" id="rc-buyout" onclick="buyoutRegion()"></button>
       </div>
     </div>
   </div>
 
-  <!-- SIDEBAR -->
   <aside>
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('upgrades', this)">⚡ Регион</button>
-      <button class="tab-btn" onclick="switchTab('global', this)">🛡️ Глобал</button>
-      <button class="tab-btn" onclick="switchTab('headlines', this)">📰 Заголовки</button>
-      <button class="tab-btn" onclick="switchTab('money', this)">💰 Бизнес</button>
+      <button class="tab-btn active" id="tab-btn-upgrades" onclick="switchTab('upgrades', this)"></button>
+      <button class="tab-btn" id="tab-btn-global" onclick="switchTab('global', this)"></button>
+      <button class="tab-btn" id="tab-btn-headlines" onclick="switchTab('headlines', this)"></button>
+      <button class="tab-btn" id="tab-btn-money" onclick="switchTab('money', this)"></button>
     </div>
-
-    <!-- TAB 1: REGIONAL UPGRADES -->
     <div class="tab-content active" id="tab-upgrades">
-      <div class="region-banner">
-        <span>Выбран: <strong id="upg-reg-name">Европа</strong></span>
-        <span>Цены: <strong id="upg-reg-mult">1.40x</strong></span>
-      </div>
-      <p style="font-size:0.73rem; color:var(--text-muted); line-height:1.35;">
-        Каждый канал открывает свой потолок охвата (до 20% → 40% → 65% → 100%). Уровни ускоряют рост до потолка.
-      </p>
+      <div class="region-banner"><span><span id="upg-lbl-selected"></span> <strong id="upg-reg-name"></strong></span><span><span id="upg-lbl-prices"></span> <strong id="upg-reg-mult"></strong></span></div>
+      <p style="font-size:0.73rem;color:var(--text-muted)" id="upg-reg-hint"></p>
       <div id="list-regional"></div>
     </div>
-
-    <!-- TAB 2: GLOBAL & DEFENSE -->
     <div class="tab-content" id="tab-global">
-      <div class="section-title">Глобальная вирусность, образование и защита</div>
+      <div class="section-title" id="sec-global"></div>
       <div id="list-global"></div>
     </div>
-
-    <!-- TAB 3: HEADLINES -->
     <div class="tab-content" id="tab-headlines">
-      <p style="font-size:0.78rem; color:var(--text-muted); line-height:1.4;">
-        Сенсация поддерживает активность, поднимает <strong>Хайп (+10%)</strong> и даёт приток верующих. Кулдаун: 10 дней. <em>Не повторяй одинаковые блоки подряд!</em>
-      </p>
-      <div class="headline-box" id="headline-preview">ШОК! Земля на самом деле плоская — и вот размытое фото с телефона!</div>
-      
-      <div class="select-group">
-        <label>1. Затравка:</label>
-        <select id="hl-trigger" onchange="updateHeadlinePreview()">
-          <option value="ШОК!">ШОК! (+вирусность)</option>
-          <option value="СРОЧНЫЙ СЛИВ:">СРОЧНЫЙ СЛИВ: (+доверие)</option>
-          <option value="ОФИЦИАЛЬНО СКРЫВАЛИ 50 ЛЕТ:">ОФИЦИАЛЬНО СКРЫВАЛИ 50 ЛЕТ: (+хайп)</option>
-          <option value="СЕНСАЦИЯ ВЕКА:">СЕНСАЦИЯ ВЕКА: (+деньги)</option>
-        </select>
-      </div>
-
-      <div class="select-group">
-        <label>2. «Доказательство»:</label>
-        <select id="hl-proof" onchange="updateHeadlinePreview()">
-          <option value="— и вот размытое фото с телефона!">и вот размытое фото с телефона!</option>
-          <option value="— подтвердил бывший охранник NASA!">подтвердил бывший охранник NASA!</option>
-          <option value="— об этом проговорился миллиардер!">об этом проговорился миллиардер!</option>
-          <option value="— власти уже пытаются удалить этот пост!">власти уже пытаются удалить этот пост!</option>
-        </select>
-      </div>
-
-      <button class="btn-publish" id="btn-publish-hl" onclick="publishHeadline()">Опубликовать сенсацию!</button>
-      <div id="hl-cooldown-text" style="font-size:0.76rem; text-align:center; color:var(--text-muted);"></div>
+      <p style="font-size:0.78rem;color:var(--text-muted)" id="hl-hint"></p>
+      <div class="headline-box" id="headline-preview"></div>
+      <div class="select-group"><label id="lbl-hl-trig"></label><select id="hl-trigger" onchange="updateHeadlinePreview()"></select></div>
+      <div class="select-group"><label id="lbl-hl-proof"></label><select id="hl-proof" onchange="updateHeadlinePreview()"></select></div>
+      <button class="btn-publish" id="btn-publish-hl" onclick="publishHeadline()"></button>
+      <div id="hl-cooldown-text" style="font-size:0.76rem;text-align:center;color:var(--text-muted)"></div>
     </div>
-
-    <!-- TAB 4: MONETIZATION -->
     <div class="tab-content" id="tab-money">
-      <div class="section-title">Монетизация и Инвесторы</div>
+      <div class="section-title" id="sec-money"></div>
       <div id="list-money"></div>
     </div>
   </aside>
 </main>
 
 <script>
-// --- GAME STATE ---
-const state = {
-  running: false,
-  paused: false,
-  speed: 1,
-  day: 1,
-  daysSinceAction: 0,
-  money: 150,
-  hype: 45,
-  virality: 10,
-  oceanThreshold: 45,
-  playerName: "Вячеслав",
-  mediaName: "Правда-Матка ТВ",
-  myth: "Земля на самом деле плоская",
-  factCheck: 0,
-  defenseFactor: 1.0,
-  incomeMultiplier: 1.0,
-  passiveIncome: 0,
-  interviewBonus: 1.0,
-  debateBonus: 0,
-  inflation: 1.0,
-  selectedRegionId: "eu",
-  headlineCooldown: 0,
-  lastHlTrigger: "",
-  lastHlProof: "",
-  nextEventDay: 36,
-  lastEventType: "debate",
-  audioMode: "jazz",
-  boughtGlobal: new Set(),
-  prevStats: { money: 150, hype: 45, virality: 10, bel: 0, fc: 0 }
+const I18N = {
+  ru: {
+    startSubtitle: "Симулятор Медиаимперии", startDesc: "Докажи всем свою правду. Борись с высоким Образованием, пробивай потолки каналов, уворачивайся от фактчекинга и дебатируй с учёными.",
+    lblPlayer: "Твоё имя:", lblMedia: "Название канала:", lblMyth: "Главный миф:", btnStart: "Запустить вещание",
+    defaultPlayer: "Вячеслав", defaultMedia: "Правда-Матка ТВ",
+    presets: [
+      { label: "🌍 Земля плоская", myth: "Земля на самом деле плоская" },
+      { label: "🐦 Голуби — дроны", myth: "Голуби — это дроны правительства" },
+      { label: "🌙 Луна — голограмма", myth: "Луна — это голограмма" },
+      { label: "🐱 Коты правят биржей", myth: "Коты управляют мировой биржей" }
+    ],
+    lblMoney: "Бюджет", lblHype: "Хайп", lblViral: "Вирусность", lblBelievers: "Верующие", lblMonopoly: "Монополия", lblFc: "Фактчекинг",
+    dayPrefix: "День", perDay: "/дн", oceanClosed: "Океаны закрыты", oceanOpen: "Океаны открыты!",
+    tickerBadge: "ЭФИР", tickerStart: "Кликай по странам на карте, качай каналы и пробивай потолок охвата!",
+    legLand: "— Суша (свободно)", legOcean: "--- Океан (нужна Вирусность 45 или Таргет)",
+    rcPop: "Население:", rcEdu: "Образование:", rcSpeed: "Скорость инфо:", rcCost: "Цены рекламы:", rcBel: "Верят / Потолок:", rcInc: "Доход/день:",
+    monopolyBadge: "МОНОПОЛИЯ", controlled: "СМИ под контролем", sideFakeBtn: "🔥 Вкинуть побочный фейк", sideFakeCd: d => `Побочный фейк (${d} дн.)`,
+    adOpen: c => `Таргет ($${c}) [Открыть]`, adBoost: c => `Таргет ($${c}) [+3%]`, buyoutBtn: c => `Выкупить СМИ ($${c}) [75%]`,
+    tabUpgrades: "⚡ Регион", tabGlobal: "🛡️ Глобал", tabHeadlines: "📰 Сенсации", tabMoney: "💰 Бизнес",
+    upgSelected: "Выбран:", upgPrices: "Цены:", upgHint: "Каналы поднимают потолок охвата: 18% → 35% → 50% → 68% → 85% → 100%.",
+    secGlobal: "Вирусность, образование и защита", secMoney: "Монетизация и инвесторы",
+    hlHint: "Сенсация даёт бонус по выбранной затравке. КД: 10 дн.", lblHlTrig: "1. Затравка:", lblHlProof: "2. «Доказательство»:",
+    btnPublish: "Опубликовать!", hlReady: "Готово!", hlCd: d => `Через ${d} дн.`,
+    lvlLabel: (l,m) => `Ур. ${l}/${m}`, maxCost: "МАКС", boughtText: "Куплено", buyBtn: "Купить", activeBtn: "Активно ✓", maxBtn: "Макс. ур. ✓",
+    cdBtn: d => `КД: ${d} дн.`, buyForRegion: (l,r) => `Купить Ур. ${l} (${r})`,
+    triggers: [
+      {val:"ШОК!", text:"ШОК! (+вирусность)"},
+      {val:"СРОЧНЫЙ СЛИВ:", text:"СРОЧНЫЙ СЛИВ: (+верующие)"},
+      {val:"СКРЫВАЛИ 50 ЛЕТ:", text:"СКРЫВАЛИ 50 ЛЕТ: (+хайп)"},
+      {val:"СЕНСАЦИЯ:", text:"СЕНСАЦИЯ: (+деньги)"},
+      {val:"ЭКСКЛЮЗИВ:", text:"ЭКСКЛЮЗИВ: (+хайп и +вирусность)"},
+      {val:"УЧЁНЫЕ В ПАНИКЕ:", text:"УЧЁНЫЕ В ПАНИКЕ: (-фактчекинг)"},
+      {val:"ТОЛЬКО СЕГОДНЯ:", text:"ТОЛЬКО СЕГОДНЯ: (+деньги и +верующие)"}
+    ],
+    proofs: [
+      {val:"— вот размытое фото!", text:"— вот размытое фото!"},
+      {val:"— подтвердил охранник NASA!", text:"— подтвердил охранник NASA!"},
+      {val:"— проговорился миллиардер!", text:"— проговорился миллиардер!"},
+      {val:"— власти удаляют этот пост!", text:"— власти удаляют этот пост!"},
+      {val:"— нашлись чертежи из прошлого века!", text:"— нашлись чертежи из прошлого века!"},
+      {val:"— блогер снял это на дрон!", text:"— блогер снял это на дрон!"},
+      {val:"— об этом намекнули в старом мультфильме!", text:"— об этом намекнули в старом мультфильме!"}
+    ],
+    regNames: { na:"Северная Америка", sa:"Юж. Америка", eu:"Европа", af:"Африка", me:"Ближ. Восток", ru:"СНГ и Север", as:"Китай и Азия", oc:"Австралия" },
+    regUpgs: {
+      r_bots:       { name: "Спам в пабликах",       desc: "Потолок 18% (+2 вирусности, КД 14 дн)." },
+      r_shorts:     { name: "Блогеры и Shorts",      desc: "Потолок 35% (+3 вирусности, +4% хайпа)." },
+      r_radio:      { name: "Радио и таксисты",      desc: "Потолок 50% (+5 вирусности, сарафанное радио)." },
+      r_chats:      { name: "Чаты и мессенджеры",    desc: "Потолок 68% (+6 вирусности)." },
+      r_billboards: { name: "Билборды и газеты",     desc: "Потолок 85% (+7 вирусности, +6% хайпа)." },
+      r_tv:         { name: "Кабельное ТВ",          desc: "Потолок 100% (+9 вирусности)." }
+    },
+    globUpgs: {
+      g_algo: { name: "Взлом алгоритмов", desc: "+15 к Вирусности." },
+      g_rhetoric: { name: "Тренинг по демагогии", desc: "+18% побед в дебатах, +35% к интервью." },
+      g_edu1: { name: "Дискредитация учебников", desc: "Образование -14% во всех регионах." },
+      g_edu2: { name: "Реформа школ", desc: "Образование ещё -18% по миру." },
+      g_def1: { name: "Ферма ботов-защитников", desc: "-22% скорости фактчекеров." },
+      g_def2: { name: "Юристы: «Это сатира!»", desc: "Сброс 16% фактчекинга." },
+      g_def3: { name: "Подкуп фактчекеров", desc: "-35% скорости расследований." },
+      m_pod: { name: "Платные подкасты", desc: "+$8/день (зависит от Хайпа)." },
+      m_book: { name: "Книга «Запретная правда»", desc: "+$14/день (зависит от Хайпа)." },
+      m_merch: { name: "Шапочки из фольги", desc: "+45% дохода с просмотров." },
+      m_course: { name: "Курс «Открой глаза»", desc: "+$22/день и +25% к просмотрам." },
+      m_crypto: { name: "Мем-коин канала", desc: "+$32/день и +20% к доходу с просмотров." },
+      m_inv: { name: "Тайные инвесторы", desc: "+$55/день." }
+    },
+    sideFakes: ["Микроволновки майнят крипту по ночам","Вышки 5G портят настроение по понедельникам","Синоптики сами включают дождь ради зонтов"],
+    scientists: ["Профессор астрофизики","Редактор журнала «Наука»","YouTube-разоблачитель","Доктор физ.-мат. наук"],
+    morningBanner: "☀️ ДОБРОЕ УТРО, ПЛАНЕТА!", morningScreen: "ПРЯМОЙ ЭФИР", debateBanner: "⚡ ДЕБАТЫ С УЧЁНЫМИ", debateScreen: "БАТТЛ В ЭФИРЕ",
+    replay: "Сыграть ещё раз", winTitle: "ИНФОРМАЦИОННАЯ СИНГУЛЯРНОСТЬ!", loseTitle: "РАССЛЕДОВАНИЕ ЗАВЕРШЕНО",
+    winDesc: (d,m,y) => `Победа за ${d} дн.! Все СМИ мира принадлежат «${m}». Теперь «${y}» — истина.`,
+    loseDesc: (d,m) => `На ${d}-й день фактчекеры закрыли «${m}».`
+  },
+  en: {
+    startSubtitle: "Media Empire Simulator", startDesc: "Prove your truth. Overcome high Education, break channel reach caps, dodge fact-checkers, and debate scientists live.",
+    lblPlayer: "Your name:", lblMedia: "Network name:", lblMyth: "Core myth:", btnStart: "Start Broadcast",
+    defaultPlayer: "Slava", defaultMedia: "Truth-ish TV",
+    presets: [
+      { label: "🌍 Flat Earth", myth: "The Earth is actually flat" },
+      { label: "🐦 Birds are drones", myth: "Pigeons are government drones" },
+      { label: "🌙 Moon hologram", myth: "The Moon is a projection" },
+      { label: "🐱 Cats run markets", myth: "Cats secretly control stock markets" }
+    ],
+    lblMoney: "Budget", lblHype: "Hype", lblViral: "Virality", lblBelievers: "Believers", lblMonopoly: "Monopoly", lblFc: "Fact-Check",
+    dayPrefix: "Day", perDay: "/d", oceanClosed: "Oceans locked", oceanOpen: "Oceans open!",
+    tickerBadge: "LIVE", tickerStart: "Click countries on the map, upgrade channels, and break reach caps!",
+    legLand: "— Land (open)", legOcean: "--- Ocean (needs 45 Virality or Ads)",
+    rcPop: "Population:", rcEdu: "Education:", rcSpeed: "Info speed:", rcCost: "Ad costs:", rcBel: "Believers / Cap:", rcInc: "Income/day:",
+    monopolyBadge: "MONOPOLY", controlled: "Media controlled", sideFakeBtn: "🔥 Drop side hoax", sideFakeCd: d => `Side hoax (${d}d)`,
+    adOpen: c => `Ads ($${c}) [Unlock]`, adBoost: c => `Ads ($${c}) [+3%]`, buyoutBtn: c => `Buy Media ($${c}) [75%]`,
+    tabUpgrades: "⚡ Region", tabGlobal: "🛡️ Global", tabHeadlines: "📰 Headlines", tabMoney: "💰 Business",
+    upgSelected: "Selected:", upgPrices: "Prices:", upgHint: "Channels raise reach cap: 18% → 35% → 50% → 68% → 85% → 100%.",
+    secGlobal: "Virality, Education & Defense", secMoney: "Monetization & Investors",
+    hlHint: "Headlines grant a bonus based on the hook. 10d CD.", lblHlTrig: "1. Hook:", lblHlProof: "2. 'Proof':",
+    btnPublish: "Publish!", hlReady: "Ready!", hlCd: d => `In ${d}d`,
+    lvlLabel: (l,m) => `Lv.${l}/${m}`, maxCost: "MAX", boughtText: "Owned", buyBtn: "Buy", activeBtn: "Active ✓", maxBtn: "Max ✓",
+    cdBtn: d => `CD: ${d}d`, buyForRegion: (l,r) => `Buy Lv.${l} (${r})`,
+    triggers: [
+      {val:"SHOCKING!", text:"SHOCKING! (+virality)"},
+      {val:"URGENT LEAK:", text:"URGENT LEAK: (+believers)"},
+      {val:"HIDDEN 50 YEARS:", text:"HIDDEN 50 YEARS: (+hype)"},
+      {val:"SCOOP:", text:"SCOOP: (+cash)"},
+      {val:"EXCLUSIVE:", text:"EXCLUSIVE: (+hype & +virality)"},
+      {val:"SCIENTISTS PANIC:", text:"SCIENTISTS PANIC: (-fact-check)"},
+      {val:"TODAY ONLY:", text:"TODAY ONLY: (+cash & +believers)"}
+    ],
+    proofs: [
+      {val:"— blurry phone photo!", text:"— blurry phone photo!"},
+      {val:"— ex-NASA guard confirms!", text:"— ex-NASA guard confirms!"},
+      {val:"— billionaire slipped up!", text:"— billionaire slipped up!"},
+      {val:"— they are deleting this!", text:"— they are deleting this!"},
+      {val:"— blueprints from the last century found!", text:"— blueprints from the last century found!"},
+      {val:"— caught on a viral drone cam!", text:"— caught on a viral drone cam!"},
+      {val:"— predicted in an old cartoon!", text:"— predicted in an old cartoon!"}
+    ],
+    regNames: { na:"North America", sa:"South America", eu:"Europe", af:"Africa", me:"Middle East", ru:"CIS & North", as:"China & Asia", oc:"Oceania" },
+    regUpgs: {
+      r_bots:       { name: "Comment spam",          desc: "Cap 18% (+2 virality, 14d CD)." },
+      r_shorts:     { name: "Creators & Shorts",     desc: "Cap 35% (+3 virality, +4% hype)." },
+      r_radio:      { name: "Talk radio & cabbies",  desc: "Cap 50% (+5 virality, word of mouth)." },
+      r_chats:      { name: "Messaging chains",      desc: "Cap 68% (+6 virality)." },
+      r_billboards: { name: "Billboards & tabloids", desc: "Cap 85% (+7 virality, +6% hype)." },
+      r_tv:         { name: "Local cable TV",        desc: "Cap 100% (+9 virality)." }
+    },
+    globUpgs: {
+      g_algo: { name: "Algorithm hack", desc: "+15 Virality." },
+      g_rhetoric: { name: "Demagoguery coaching", desc: "+18% debate win, +35% interview rewards." },
+      g_edu1: { name: "Discredit textbooks", desc: "Education -14% globally." },
+      g_edu2: { name: "Lobby school reform", desc: "Education -18% globally." },
+      g_def1: { name: "Defense bot farm", desc: "-22% fact-check speed." },
+      g_def2: { name: "Lawyers: 'It's satire!'", desc: "-16% fact-check now." },
+      g_def3: { name: "Bribe fact-checkers", desc: "-35% investigation speed." },
+      m_pod: { name: "Paid podcasts", desc: "+$8/day (scales with Hype)." },
+      m_book: { name: "Book 'Forbidden Truth'", desc: "+$14/day (scales with Hype)." },
+      m_merch: { name: "Tin-foil merch", desc: "+45% view income." },
+      m_course: { name: "'Wake Up' course", desc: "+$22/day & +25% view income." },
+      m_crypto: { name: "Channel meme-coin", desc: "+$32/day & +20% view income." },
+      m_inv: { name: "Shadow investors", desc: "+$55/day." }
+    },
+    sideFakes: ["Microwaves mine crypto at night","5G towers broadcast bad moods on Mondays","Forecasters trigger rain to sell umbrellas"],
+    scientists: ["Astrophysics Professor","Editor of 'Science'","YouTube Debunker","Doctor of Physics"],
+    morningBanner: "☀️ GOOD MORNING, PLANET!", morningScreen: "LIVE BROADCAST", debateBanner: "⚡ SCIENTIST DEBATE", debateScreen: "LIVE SHOWDOWN",
+    replay: "Play Again", winTitle: "INFORMATION SINGULARITY!", loseTitle: "INVESTIGATION CLOSED",
+    winDesc: (d,m,y) => `Victory in ${d} days! '${m}' owns all media. '${y}' is now canon.`,
+    loseDesc: (d,m) => `On day ${d}, fact-checkers shut down '${m}'.`
+  },
+  es: {
+    startSubtitle: "Simulador de Imperio Mediático", startDesc: "Convence al mundo. Supera la Educación, rompe topes de alcance, esquiva la verificación y debate con científicos.",
+    lblPlayer: "Tu nombre:", lblMedia: "Cadena:", lblMyth: "Mito principal:", btnStart: "Iniciar emisión",
+    defaultPlayer: "Slava", defaultMedia: "Verdad-Express TV",
+    presets: [
+      { label: "🌍 Tierra plana", myth: "La Tierra en realidad es plana" },
+      { label: "🐦 Palomas drones", myth: "Las palomas son drones del gobierno" },
+      { label: "🌙 Luna holograma", myth: "La Luna es una proyección" },
+      { label: "🐱 Gatos en la bolsa", myth: "Los gatos controlan la bolsa" }
+    ],
+    lblMoney: "Presupuesto", lblHype: "Hype", lblViral: "Viralidad", lblBelievers: "Creyentes", lblMonopoly: "Monopolio", lblFc: "Verificación",
+    dayPrefix: "Día", perDay: "/d", oceanClosed: "Océanos cerrados", oceanOpen: "¡Océanos abiertos!",
+    tickerBadge: "EN VIVO", tickerStart: "¡Pulsa países en el mapa, mejora canales y rompe los topes!",
+    legLand: "— Tierra (libre)", legOcean: "--- Océano (45 Viralidad o Ads)",
+    rcPop: "Población:", rcEdu: "Educación:", rcSpeed: "Vel. info:", rcCost: "Coste ads:", rcBel: "Creen / Tope:", rcInc: "Ingreso/día:",
+    monopolyBadge: "MONOPOLIO", controlled: "Medios comprados", sideFakeBtn: "🔥 Lanzar bulo extra", sideFakeCd: d => `Bulo extra (${d}d)`,
+    adOpen: c => `Ads ($${c}) [Abrir]`, adBoost: c => `Ads ($${c}) [+3%]`, buyoutBtn: c => `Comprar medios ($${c}) [75%]`,
+    tabUpgrades: "⚡ Región", tabGlobal: "🛡️ Global", tabHeadlines: "📰 Titulares", tabMoney: "💰 Negocio",
+    upgSelected: "Región:", upgPrices: "Precios:", upgHint: "Los canales suben el tope: 18% → 35% → 50% → 68% → 85% → 100%.",
+    secGlobal: "Viralidad, educación y defensa", secMoney: "Monetización e inversores",
+    hlHint: "Los titulares dan bono según el gancho. 10d espera.", lblHlTrig: "1. Gancho:", lblHlProof: "2. 'Prueba':",
+    btnPublish: "¡Publicar!", hlReady: "¡Listo!", hlCd: d => `En ${d}d`,
+    lvlLabel: (l,m) => `Niv.${l}/${m}`, maxCost: "MÁX", boughtText: "Comprado", buyBtn: "Comprar", activeBtn: "Activo ✓", maxBtn: "Máx. ✓",
+    cdBtn: d => `Espera: ${d}d`, buyForRegion: (l,r) => `Niv.${l} (${r})`,
+    triggers: [
+      {val:"¡IMPACTO!", text:"¡IMPACTO! (+viralidad)"},
+      {val:"FILTRACIÓN:", text:"FILTRACIÓN: (+creyentes)"},
+      {val:"OCULTO 50 AÑOS:", text:"OCULTO 50 AÑOS: (+hype)"},
+      {val:"PRIMICIA:", text:"PRIMICIA: (+dinero)"},
+      {val:"EXCLUSIVA:", text:"EXCLUSIVA: (+hype y +viralidad)"},
+      {val:"PÁNICO CIENTÍFICO:", text:"PÁNICO CIENTÍFICO: (-verificación)"},
+      {val:"SOLO HOY:", text:"SOLO HOY: (+dinero y +creyentes)"}
+    ],
+    proofs: [
+      {val:"— ¡foto borrosa!", text:"— ¡foto borrosa!"},
+      {val:"— ¡exguardia NASA confirma!", text:"— ¡exguardia NASA confirma!"},
+      {val:"— ¡millonario se delató!", text:"— ¡millonario se delató!"},
+      {val:"— ¡intentan borrar esto!", text:"— ¡intentan borrar esto!"},
+      {val:"— ¡hallaron planos del siglo pasado!", text:"— ¡hallaron planos del siglo pasado!"},
+      {val:"— ¡grabado con un dron!", text:"— ¡grabado con un dron!"},
+      {val:"— ¡salió en un dibujo antiguo!", text:"— ¡salió en un dibujo antiguo!"}
+    ],
+    regNames: { na:"Norteamérica", sa:"Sudamérica", eu:"Europa", af:"África", me:"Oriente Medio", ru:"CEI y Norte", as:"China y Asia", oc:"Oceanía" },
+    regUpgs: {
+      r_bots:       { name: "Spam en foros",        desc: "Tope 18% (+2 viralidad, 14d)." },
+      r_shorts:     { name: "Creadores y Shorts",   desc: "Tope 35% (+3 viralidad, +4% hype)." },
+      r_radio:      { name: "Radio y taxistas",     desc: "Tope 50% (+5 viralidad, boca a boca)." },
+      r_chats:      { name: "Cadenas de chat",      desc: "Tope 68% (+6 viralidad)." },
+      r_billboards: { name: "Vallas y prensa",      desc: "Tope 85% (+7 viralidad, +6% hype)." },
+      r_tv:         { name: "TV por cable",         desc: "Tope 100% (+9 viralidad)." }
+    },
+    globUpgs: {
+      g_algo: { name: "Hackear algoritmos", desc: "+15 Viralidad." },
+      g_rhetoric: { name: "Curso de demagogia", desc: "+18% debates, +35% entrevistas." },
+      g_edu1: { name: "Desacreditar libros", desc: "Educación -14% global." },
+      g_edu2: { name: "Reforma escolar", desc: "Educación -18% global." },
+      g_def1: { name: "Bots defensores", desc: "-22% vel. verificación." },
+      g_def2: { name: "Abogados: '¡Es sátira!'", desc: "-16% verificación ahora." },
+      g_def3: { name: "Sobornar verificadores", desc: "-35% vel. investigación." },
+      m_pod: { name: "Pódcasts pagados", desc: "+$8/día (según Hype)." },
+      m_book: { name: "Libro 'Verdad Prohibida'", desc: "+$14/día (según Hype)." },
+      m_merch: { name: "Gorros de aluminio", desc: "+45% ingresos visitas." },
+      m_course: { name: "Curso 'Despierta'", desc: "+$22/día y +25% visitas." },
+      m_crypto: { name: "Memecoin del canal", desc: "+$32/día y +20% ingresos visitas." },
+      m_inv: { name: "Inversores ocultos", desc: "+$55/día." }
+    },
+    sideFakes: ["Los microondas minan cripto de noche","El 5G da mal humor los lunes","Los meteorólogos provocan lluvia"],
+    scientists: ["Profesor de Astrofísica","Director de 'Ciencia'","Cazafakes de YouTube","Doctor en Física"],
+    morningBanner: "☀️ ¡BUENOS DÍAS, PLANETA!", morningScreen: "EN VIVO", debateBanner: "⚡ DEBATE CIENTÍFICO", debateScreen: "DUELO EN DIRECTO",
+    replay: "Jugar de nuevo", winTitle: "¡SINGULARIDAD INFORMATIVA!", loseTitle: "INVESTIGACIÓN CERRADA",
+    winDesc: (d,m,y) => `¡Victoria en ${d} días! '${m}' domina todo. '${y}' es oficial.`,
+    loseDesc: (d,m) => `En el día ${d}, cerraron '${m}'.`
+  }
 };
 
-const MAX_REGIONAL_LVL = 5;
+const state = {
+  lang: "ru", customMyth: false, presetIndex: 0, running: false, paused: false, speed: 1,
+  day: 1, daysSinceAction: 0, money: 150, hype: 45, virality: 10, oceanThreshold: 45,
+  playerName: "Вячеслав", mediaName: "Правда-Матка ТВ", myth: "Земля на самом деле плоская",
+  factCheck: 0, defenseFactor: 1.0, incomeMultiplier: 1.0, passiveIncome: 0,
+  interviewBonus: 1.0, debateBonus: 0, inflation: 1.0,
+  selectedRegionId: "eu", selectedCountryName: "", headlineCooldown: 0,
+  lastHlTrigger: "", lastHlProof: "", nextEventDay: 36, lastEventType: "debate",
+  audioMode: "jazz", musicGenre: "jazz",
+  boughtGlobal: new Set(), prevStats: { money: 150, hype: 45, virality: 10, bel: 0, fc: 0 }
+};
 
-// Realistic, detailed World Regions aligned with realistic map visual landmarks
+const MAX_LVL = 5;
 const regions = [
-  { id: "na", name: "США и Канада",pop: 370, bel: 0,   x: 180, y: 110, r: 42, costMult: 1.8,  infoSpeed: 1.50, education: 84, buyoutBase: 950,  bought: false, upgState: {},
-    links: [{to:"sa", ocean:false}, {to:"eu", ocean:true}, {to:"as", ocean:true}] },
-  { id: "sa", name: "Южная Америка",pop: 430, bel: 0,   x: 275, y: 310, r: 35, costMult: 0.85, infoSpeed: 0.85, education: 54, buyoutBase: 750,  bought: false, upgState: {},
-    links: [{to:"na", ocean:false}, {to:"af", ocean:true}] },
-  { id: "eu", name: "Европа",       pop: 750, bel: 0.5, x: 440, y: 135, r: 30, costMult: 1.4,  infoSpeed: 1.30, education: 82, buyoutBase: 900,  bought: false, upgState: {},
-    links: [{to:"na", ocean:true}, {to:"af", ocean:false}, {to:"ru", ocean:false}, {to:"me", ocean:false}] },
-  { id: "af", name: "Африка",       pop: 1300,bel: 0,   x: 460, y: 295, r: 38, costMult: 0.65, infoSpeed: 0.55, education: 38, buyoutBase: 700,  bought: false, upgState: {},
-    links: [{to:"eu", ocean:false}, {to:"sa", ocean:true}, {to:"me", ocean:false}] },
-  { id: "me", name: "Ближ. Восток", pop: 400, bel: 0,   x: 550, y: 200, r: 24, costMult: 1.1,  infoSpeed: 0.95, education: 60, buyoutBase: 800,  bought: false, upgState: {},
-    links: [{to:"eu", ocean:false}, {to:"af", ocean:false}, {to:"ru", ocean:false}, {to:"as", ocean:false}] },
-  { id: "ru", name: "СНГ и Север",  pop: 290, bel: 0,   x: 610, y: 105, r: 32, costMult: 1.0,  infoSpeed: 1.00, education: 76, buyoutBase: 750,  bought: false, upgState: {},
-    links: [{to:"eu", ocean:false}, {to:"me", ocean:false}, {to:"as", ocean:false}] },
-  { id: "as", name: "Китай и Азия", pop: 4200,bel: 0,   x: 720, y: 200, r: 44, costMult: 1.35, infoSpeed: 1.20, education: 68, buyoutBase: 1100, bought: false, upgState: {},
-    links: [{to:"ru", ocean:false}, {to:"me", ocean:false}, {to:"oc", ocean:true}, {to:"na", ocean:true}] },
-  { id: "oc", name: "Австралия",    pop: 45,  bel: 0,   x: 780, y: 405, r: 25, costMult: 1.2,  infoSpeed: 1.15, education: 80, buyoutBase: 650,  bought: false, upgState: {},
-    links: [{to:"as", ocean:true}] }
+  { id:"na", pop:580, bel:0, lon:-98, lat:40, fx:185, fy:135, costMult:1.8, infoSpeed:1.5, education:84, buyoutBase:950, bought:false, upgState:{}, links:[{to:"sa",ocean:false},{to:"eu",ocean:true},{to:"as",ocean:true}] },
+  { id:"sa", pop:430, bel:0, lon:-58, lat:-16, fx:290, fy:325, costMult:0.85, infoSpeed:0.85, education:54, buyoutBase:750, bought:false, upgState:{}, links:[{to:"na",ocean:false},{to:"af",ocean:true}] },
+  { id:"eu", pop:750, bel:0.5, lon:14, lat:49, fx:490, fy:125, costMult:1.4, infoSpeed:1.3, education:82, buyoutBase:900, bought:false, upgState:{}, links:[{to:"na",ocean:true},{to:"af",ocean:false},{to:"ru",ocean:false},{to:"me",ocean:false}] },
+  { id:"af", pop:1300, bel:0, lon:22, lat:4, fx:505, fy:295, costMult:0.65, infoSpeed:0.55, education:38, buyoutBase:700, bought:false, upgState:{}, links:[{to:"eu",ocean:false},{to:"sa",ocean:true},{to:"me",ocean:false}] },
+  { id:"me", pop:400, bel:0, lon:45, lat:27, fx:585, fy:210, costMult:1.1, infoSpeed:0.95, education:60, buyoutBase:800, bought:false, upgState:{}, links:[{to:"eu",ocean:false},{to:"af",ocean:false},{to:"ru",ocean:false},{to:"as",ocean:false}] },
+  { id:"ru", pop:290, bel:0, lon:85, lat:61, fx:650, fy:105, costMult:1.0, infoSpeed:1.0, education:76, buyoutBase:750, bought:false, upgState:{}, links:[{to:"eu",ocean:false},{to:"me",ocean:false},{to:"as",ocean:false}] },
+  { id:"as", pop:4200, bel:0, lon:105, lat:32, fx:740, fy:205, costMult:1.35, infoSpeed:1.2, education:68, buyoutBase:1100, bought:false, upgState:{}, links:[{to:"ru",ocean:false},{to:"me",ocean:false},{to:"oc",ocean:true},{to:"na",ocean:true}] },
+  { id:"oc", pop:45, bel:0, lon:134, lat:-25, fx:815, fy:375, costMult:1.2, infoSpeed:1.15, education:80, buyoutBase:650, bought:false, upgState:{}, links:[{to:"as",ocean:true}] }
 ];
 
-const regionalUpgradeTemplates = [
-  { id: "r_bots",   name: "Спам в местных пабликах", baseCost: 70,  cdDays: 14, cap: 20,  spreadBonus: 0.40, viralBonus: 2, hypeBonus: 3, desc: "Потолок охвата: 20%. Запускает рост (+2 вирусности, КД 14 дн)." },
-  { id: "r_shorts", name: "Местные блогеры и Shorts", baseCost: 160, cdDays: 18, cap: 40,  spreadBonus: 0.70, viralBonus: 4, hypeBonus: 5, desc: "Потолок охвата: 40%. Буст молодёжи (+4 вирусности, +5% хайпа)." },
-  { id: "r_chats",  name: "Рассылки в мессенджерах",  baseCost: 265, cdDays: 20, cap: 65,  spreadBonus: 0.95, viralBonus: 6, hypeBonus: 4, desc: "Потолок охвата: 65%. Чаты родственников (+6 вирусности)." },
-  { id: "r_tv",     name: "Локальное кабельное ТВ",   baseCost: 450, cdDays: 24, cap: 100, spreadBonus: 1.45, viralBonus: 8, hypeBonus: 8, desc: "Потолок охвата: 100%. Полный захват региона (+8 вирусности)." }
+const regTemplates = [
+  { id:"r_bots",       baseCost:70,  cdDays:14, spreadBonus:0.40, viralBonus:2, hypeBonus:3 },
+  { id:"r_shorts",     baseCost:145, cdDays:16, spreadBonus:0.65, viralBonus:3, hypeBonus:4 },
+  { id:"r_radio",      baseCost:220, cdDays:18, spreadBonus:0.85, viralBonus:5, hypeBonus:4 },
+  { id:"r_chats",      baseCost:310, cdDays:20, spreadBonus:1.05, viralBonus:6, hypeBonus:5 },
+  { id:"r_billboards", baseCost:420, cdDays:22, spreadBonus:1.25, viralBonus:7, hypeBonus:6 },
+  { id:"r_tv",         baseCost:560, cdDays:24, spreadBonus:1.55, viralBonus:9, hypeBonus:8 }
 ];
-
-regions.forEach(r => {
-  r.sideFakeCd = 0;
-  regionalUpgradeTemplates.forEach(u => {
-    r.upgState[u.id] = { level: 0, cd: 0 };
-  });
-});
+regions.forEach(r => { r.sideFakeCd = 0; regTemplates.forEach(u => r.upgState[u.id] = { level:0, cd:0 }); });
 
 const globalUpgrades = [
-  { id: "g_algo", cat: "global", name: "Взлом алгоритмов рекомендаций", baseCost: 240, desc: "+15 к общей Вирусности (приближает выход за океан).", effect: () => { state.virality += 15; } },
-  { id: "g_rhetoric", cat: "global", name: "Тренинг по демагогии", baseCost: 210, desc: "+18% к шансу победы в дебатах и +35% к наградам в интервью.", effect: () => { state.debateBonus += 0.18; state.interviewBonus += 0.35; } },
-  { id: "g_edu1", cat: "global", name: "Дискредитация учебников", baseCost: 380, desc: "Снижает Образование во всех регионах на -14% (люди верят охотнее).", effect: () => { regions.forEach(r => r.education = Math.max(15, r.education - 14)); } },
-  { id: "g_edu2", cat: "global", name: "Лоббирование реформы школ", baseCost: 720, desc: "Заменяем физику короткими роликами: Образование -18% по всему миру.", effect: () => { regions.forEach(r => r.education = Math.max(10, r.education - 18)); } },
-  { id: "g_def1", cat: "global", name: "Ферма ботов-защитников", baseCost: 260, desc: "Топит разоблачения в дизлайках (-22% скорости фактчекеров).", effect: () => { state.defenseFactor *= 0.78; } },
-  { id: "g_def2", cat: "global", name: "Юристы: «Это просто сатира!»", baseCost: 420, desc: "Сбрасывает 16% шкалы фактчекинга прямо сейчас.", effect: () => { state.factCheck = Math.max(0, state.factCheck - 16); } },
-  { id: "g_def3", cat: "global", name: "Подкуп фактчекеров", baseCost: 780, desc: "Замедляет расследования ещё на 35%.", effect: () => { state.defenseFactor *= 0.65; } },
-
-  // Business / Money
-  { id: "m_pod", cat: "money", name: "Платные интервью и подкасты", baseCost: 150, desc: "Пассивный доход +$8/день (зависит от Хайпа).", effect: () => { state.passiveIncome += 8; } },
-  { id: "m_merch", cat: "money", name: "Мерч: Шапочки из фольги", baseCost: 340, desc: "+45% к доходу со всех просмотров.", effect: () => { state.incomeMultiplier += 0.45; } },
-  { id: "m_course", cat: "money", name: "Онлайн-курс «Как открыть глаза»", baseCost: 560, desc: "Инфоцыганство в действии: +$22/день и +25% к просмотрам.", effect: () => { state.passiveIncome += 22; state.incomeMultiplier += 0.25; } },
-  { id: "m_inv", cat: "money", name: "Тайные инвесторы", baseCost: 950, desc: "Крупные фонды спонсируют хаос (+$55/день).", effect: () => { state.passiveIncome += 55; } }
+  { id:"g_algo", cat:"global", baseCost:240, effect:()=>{ state.virality += 15; } },
+  { id:"g_rhetoric", cat:"global", baseCost:210, effect:()=>{ state.debateBonus += 0.18; state.interviewBonus += 0.35; } },
+  { id:"g_edu1", cat:"global", baseCost:380, effect:()=>{ regions.forEach(r => r.education = Math.max(15, r.education - 14)); } },
+  { id:"g_edu2", cat:"global", baseCost:720, effect:()=>{ regions.forEach(r => r.education = Math.max(10, r.education - 18)); } },
+  { id:"g_def1", cat:"global", baseCost:260, effect:()=>{ state.defenseFactor *= 0.78; } },
+  { id:"g_def2", cat:"global", baseCost:420, effect:()=>{ state.factCheck = Math.max(0, state.factCheck - 16); } },
+  { id:"g_def3", cat:"global", baseCost:780, effect:()=>{ state.defenseFactor *= 0.65; } },
+  { id:"m_pod",    cat:"money", baseCost:150, effect:()=>{ state.passiveIncome += 8; } },
+  { id:"m_book",   cat:"money", baseCost:240, effect:()=>{ state.passiveIncome += 14; } },
+  { id:"m_merch",  cat:"money", baseCost:340, effect:()=>{ state.incomeMultiplier += 0.45; } },
+  { id:"m_course", cat:"money", baseCost:560, effect:()=>{ state.passiveIncome += 22; state.incomeMultiplier += 0.25; } },
+  { id:"m_crypto", cat:"money", baseCost:760, effect:()=>{ state.passiveIncome += 32; state.incomeMultiplier += 0.20; } },
+  { id:"m_inv",    cat:"money", baseCost:980, effect:()=>{ state.passiveIncome += 55; } }
 ];
 
-const sideFakesList = [
-  "Микроволновки тайно майнят крипту по ночам",
-  "Вышки 5G раздают плохое настроение по понедельникам",
-  "Зарядки от телефонов выкачивают энергию из розетки обратно в космос",
-  "Умные колонки переговариваются друг с другом, пока вас нет дома",
-  "Синоптики сами включают дождь, чтобы продавать зонты",
-  "Кофе без кофеина — это заговор производителей сна"
-];
+const t = () => I18N[state.lang] || I18N.ru;
+const getRegionName = id => t().regNames[id] || id;
+const registerAction = () => { state.daysSinceAction = 0; };
+const getHypeMult = () => Math.max(0.15, state.hype / 50);
+const getRegPrice = (base, r, lvl=0) => Math.round(base * r.costMult * state.inflation * (1 + lvl * 0.4));
+const getGlobPrice = base => Math.round(base * state.inflation);
+const getRegionCap = r => (r.bought || r.upgState.r_tv.level > 0) ? 100
+  : r.upgState.r_billboards.level > 0 ? 85
+  : r.upgState.r_chats.level > 0 ? 68
+  : r.upgState.r_radio.level > 0 ? 50
+  : r.upgState.r_shorts.level > 0 ? 35
+  : r.upgState.r_bots.level > 0 ? 18 : 5;
 
-const debateScientists = [
-  "Профессор астрофизики",
-  "Главный редактор журнала «Наука»",
-  "Популярный YouTube-разоблачитель",
-  "Доктор физических наук",
-  "Глава комиссии по борьбе с лженаукой"
-];
-
-// --- HELPERS ---
-function registerAction() {
-  state.daysSinceAction = 0;
+function setLanguage(lang) {
+  const prev = t();
+  state.lang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll(".lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
+  const next = t();
+  const pi = document.getElementById("input-player"), mi = document.getElementById("input-media"), myi = document.getElementById("input-myth");
+  if (pi.value === prev.defaultPlayer) pi.value = next.defaultPlayer;
+  if (mi.value === prev.defaultMedia) mi.value = next.defaultMedia;
+  if (!state.customMyth) { myi.value = next.presets[state.presetIndex].myth; state.myth = myi.value; }
+  applyStatic();
+  if (state.running) { renderMapLabels(); updateUI(); }
 }
 
-function getRegionCap(r) {
-  if (r.bought || r.upgState.r_tv.level > 0) return 100;
-  if (r.upgState.r_chats.level > 0) return 65;
-  if (r.upgState.r_shorts.level > 0) return 40;
-  if (r.upgState.r_bots.level > 0) return 20;
-  return 5;
-}
+function applyStatic() {
+  const d = t();
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("start-subtitle", d.startSubtitle); set("start-desc", d.startDesc);
+  set("lbl-player", d.lblPlayer); set("lbl-media", d.lblMedia); set("lbl-myth", d.lblMyth);
+  set("btn-start-game", d.btnStart); set("btn-replay", d.replay);
+  set("lbl-money", d.lblMoney); set("lbl-hype", d.lblHype); set("lbl-viral", d.lblViral);
+  set("lbl-believers", d.lblBelievers); set("lbl-monopoly", d.lblMonopoly); set("lbl-fc", d.lblFc);
+  set("ticker-badge", d.tickerBadge); set("leg-land", d.legLand); set("leg-ocean", d.legOcean);
+  set("rc-lbl-pop", d.rcPop); set("rc-lbl-edu", d.rcEdu); set("rc-lbl-speed", d.rcSpeed);
+  set("rc-lbl-cost", d.rcCost); set("rc-lbl-bel", d.rcBel); set("rc-lbl-inc", d.rcInc); set("rc-badge", d.monopolyBadge);
+  set("tab-btn-upgrades", d.tabUpgrades); set("tab-btn-global", d.tabGlobal); set("tab-btn-headlines", d.tabHeadlines); set("tab-btn-money", d.tabMoney);
+  set("upg-lbl-selected", d.upgSelected); set("upg-lbl-prices", d.upgPrices); set("upg-reg-hint", d.upgHint);
+  set("sec-global", d.secGlobal); set("sec-money", d.secMoney);
+  set("hl-hint", d.hlHint); set("lbl-hl-trig", d.lblHlTrig); set("lbl-hl-proof", d.lblHlProof); set("btn-publish-hl", d.btnPublish);
 
-function getRegionalPrice(baseCost, region, level = 0) {
-  return Math.round(baseCost * region.costMult * state.inflation * (1 + level * 0.4));
-}
+  const pc = document.getElementById("presets-container"); pc.innerHTML = "";
+  d.presets.forEach((p, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "preset-chip"; b.textContent = p.label;
+    b.onclick = () => { state.presetIndex = i; state.customMyth = false; document.getElementById("input-myth").value = p.myth; state.myth = p.myth; };
+    pc.appendChild(b);
+  });
 
-function getGlobalPrice(baseCost) {
-  return Math.round(baseCost * state.inflation);
-}
-
-function getHypeMultiplier() {
-  return Math.max(0.15, (state.hype / 50));
-}
-
-function setMyth(text) {
-  document.getElementById("input-myth").value = text;
+  const ts = document.getElementById("hl-trigger"), ps = document.getElementById("hl-proof");
+  const ti = Math.max(0, ts.selectedIndex), pi = Math.max(0, ps.selectedIndex);
+  ts.innerHTML = d.triggers.map(x => `<option value="${x.val}">${x.text}</option>`).join(""); ts.selectedIndex = ti;
+  ps.innerHTML = d.proofs.map(x => `<option value="${x.val}">${x.text}</option>`).join(""); ps.selectedIndex = pi;
+  updateHeadlinePreview();
 }
 
 function startGame() {
-  const pName = document.getElementById("input-player").value.trim();
-  const mName = document.getElementById("input-media").value.trim();
+  const d = t();
+  state.playerName = document.getElementById("input-player").value.trim() || d.defaultPlayer;
+  state.mediaName = document.getElementById("input-media").value.trim() || d.defaultMedia;
   const mText = document.getElementById("input-myth").value.trim();
-  if (pName) state.playerName = pName;
-  if (mName) state.mediaName = mName;
-  if (mText) state.myth = mText;
+  if (mText) { state.myth = mText; state.customMyth = !d.presets.some(p => p.myth === mText); }
 
   document.getElementById("ui-media-name").textContent = state.mediaName;
   document.getElementById("ui-myth-text").textContent = `«${state.myth}»`;
   document.getElementById("studio-screen-myth").textContent = `«${state.myth}»`;
+  document.getElementById("ui-ticker").textContent = d.tickerStart;
   document.getElementById("start-modal").classList.add("hidden");
 
-  renderMap();
-  selectRegion("eu");
+  try { ensureAudio(); if (musicEnabled) startJazz(); } catch (e) {}
+
+  initWorldMap();
+  selectRegion("eu", "");
   renderGlobalUpgrades();
   updateHeadlinePreview();
-  setTicker(`«${state.mediaName}» запущен! Прокачивай каналы в регионе, чтобы пробить потолок охвата.`);
-
   state.running = true;
-  if (musicEnabled) startJazz();
   gameLoop();
 }
 
-// --- MAP ---
-function renderMap() {
-  const routesG = document.getElementById("map-routes");
-  const regionsG = document.getElementById("map-regions");
-  routesG.innerHTML = "";
-  regionsG.innerHTML = "";
+// --- MAP (REAL COUNTRIES + AUTOMATIC FALLBACK) ---
+let mapProj = null;
+function classifyCountry(lon, lat) {
+  if (lat < -58) return null;
+  if (lon < -30) return lat > 12 ? "na" : "sa";
+  if (lat < 35 && lon >= -20 && lon <= 52) return (lon > 32 && lat > 12) ? "me" : "af";
+  if (lon > 110 && lat < 8) return "oc";
+  if (lon >= 24 && lon <= 175 && lat >= 46) return "ru";
+  if (lon >= -12 && lon <= 45 && lat >= 35) return "eu";
+  if (lon > 32 && lon <= 62 && lat >= 12 && lat < 42) return "me";
+  return "as";
+}
 
+function initWorldMap() {
+  try {
+    if (window.d3 && window.topojson && typeof d3.geoNaturalEarth1 === "function") {
+      mapProj = d3.geoNaturalEarth1().scale(178).translate([480, 262]);
+      const pathGen = d3.geoPath().projection(mapProj);
+      document.getElementById("map-graticule").innerHTML = `<path class="graticule-line" d="${pathGen(d3.geoGraticule10())}" />`;
+
+      fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(world => {
+          const geo = topojson.feature(world, world.objects.countries);
+          const g = document.getElementById("map-countries"); g.innerHTML = "";
+          geo.features.forEach(f => {
+            const c = d3.geoCentroid(f);
+            if (!c || Number.isNaN(c[0])) return;
+            const regId = classifyCountry(c[0], c[1]);
+            const dAttr = pathGen(f); if (!dAttr) return;
+            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            p.setAttribute("d", dAttr); p.setAttribute("class", "country-path");
+            if (regId) {
+              const cname = (f.properties && f.properties.name) || "";
+              p.setAttribute("data-region", regId);
+              if (cname) p.setAttribute("data-country", cname);
+              p.onclick = () => selectRegion(regId, cname);
+            } else { p.style.fill = "#0f172a"; p.style.cursor = "default"; }
+            g.appendChild(p);
+          });
+          renderRoutesAndMarkers(false);
+          updateMapVisuals();
+        })
+        .catch(() => renderFallbackMap());
+      return;
+    }
+  } catch (e) { console.warn("Map fallback:", e); }
+  renderFallbackMap();
+}
+
+function renderFallbackMap() {
+  const g = document.getElementById("map-countries"); g.innerHTML = "";
+  const shapes = {
+    na: "M70,80 L220,55 L300,115 L245,195 L145,205 L95,155 Z",
+    sa: "M225,245 L315,245 L355,320 L300,445 L255,445 L220,335 Z",
+    eu: "M425,95 L540,75 L555,155 L445,175 Z",
+    af: "M435,205 L545,200 L585,295 L535,415 L465,405 L425,285 Z",
+    me: "M545,165 L625,170 L635,245 L555,235 Z",
+    ru: "M550,65 L805,70 L820,145 L555,150 Z",
+    as: "M635,155 L830,155 L815,265 L665,270 Z",
+    oc: "M755,335 L865,330 L880,415 L770,420 Z"
+  };
+  Object.entries(shapes).forEach(([id, dAttr]) => {
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", dAttr); p.setAttribute("class", "country-path");
+    p.setAttribute("data-region", id); p.onclick = () => selectRegion(id, "");
+    g.appendChild(p);
+  });
+  renderRoutesAndMarkers(true);
+  updateMapVisuals();
+}
+
+function renderRoutesAndMarkers(useFallback) {
+  const rg = document.getElementById("map-routes"), mg = document.getElementById("map-markers");
+  rg.innerHTML = ""; mg.innerHTML = "";
+  const pt = r => (!useFallback && mapProj) ? mapProj([r.lon, r.lat]) : [r.fx, r.fy];
   const drawn = new Set();
   regions.forEach(r => {
-    r.links.forEach(link => {
-      const key = [r.id, link.to].sort().join("-");
+    const p1 = pt(r);
+    r.links.forEach(l => {
+      const key = [r.id, l.to].sort().join("-");
       if (!drawn.has(key)) {
         drawn.add(key);
-        const target = regions.find(x => x.id === link.to);
+        const p2 = pt(regions.find(x => x.id === l.to));
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", r.x); line.setAttribute("y1", r.y);
-        line.setAttribute("x2", target.x); line.setAttribute("y2", target.y);
-        line.setAttribute("class", link.ocean ? "route-ocean" : "route-land");
-        if (link.ocean) line.setAttribute("data-ocean", "1");
-        routesG.appendChild(line);
+        line.setAttribute("x1", p1[0]); line.setAttribute("y1", p1[1]);
+        line.setAttribute("x2", p2[0]); line.setAttribute("y2", p2[1]);
+        line.setAttribute("class", l.ocean ? "route-ocean" : "route-land");
+        if (l.ocean) line.setAttribute("data-ocean", "1");
+        rg.appendChild(line);
       }
     });
-  });
-
-  regions.forEach(r => {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g.setAttribute("class", "region-node");
-    g.setAttribute("id", `node-${r.id}`);
-    g.onclick = () => selectRegion(r.id);
-
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", r.x); circle.setAttribute("cy", r.y);
-    circle.setAttribute("r", r.r);
-    circle.setAttribute("class", "region-shape");
-    circle.setAttribute("id", `shape-${r.id}`);
-
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", r.x); label.setAttribute("y", r.y - 3);
-    label.setAttribute("class", "region-label");
-    label.textContent = r.name;
-
-    const pct = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    pct.setAttribute("x", r.x); pct.setAttribute("y", r.y + 13);
-    pct.setAttribute("class", "region-pct");
-    pct.setAttribute("id", `pct-${r.id}`);
-    pct.textContent = "0%";
-
-    g.appendChild(circle);
-    g.appendChild(label);
-    g.appendChild(pct);
-    regionsG.appendChild(g);
+    g.innerHTML = `<circle cx="${p1[0]}" cy="${p1[1]-12}" r="4" class="region-hub-dot"/><text x="${p1[0]}" y="${p1[1]+2}" class="region-label" id="label-${r.id}">${getRegionName(r.id)}</text><text x="${p1[0]}" y="${p1[1]+15}" class="region-pct" id="pct-${r.id}">0%</text>`;
+    mg.appendChild(g);
   });
 }
 
-function selectRegion(id) {
-  state.selectedRegionId = id;
-  document.querySelectorAll(".region-node").forEach(n => n.classList.remove("selected"));
-  const el = document.getElementById(`node-${id}`);
-  if (el) el.classList.add("selected");
-  renderRegionalUpgrades();
-  updateRegionCard();
-}
-
-function getRegionDailyIncome(r) {
-  return (r.bel / 100) * (r.pop / 280) * state.incomeMultiplier * getHypeMultiplier() * 2.2;
-}
+function renderMapLabels() { regions.forEach(r => { const el = document.getElementById(`label-${r.id}`); if (el) el.textContent = getRegionName(r.id); }); }
+function selectRegion(id, countryName="") { state.selectedRegionId = id; state.selectedCountryName = countryName; renderRegionalUpgrades(); updateRegionCard(); updateMapVisuals(); }
+const getRegIncome = r => (r.bel / 100) * (r.pop / 280) * state.incomeMultiplier * getHypeMult() * 2.2;
 
 function updateRegionCard() {
-  const r = regions.find(x => x.id === state.selectedRegionId);
-  if (!r) return;
-  const cap = getRegionCap(r);
-
-  document.getElementById("rc-name").textContent = r.name;
+  const d = t(), r = regions.find(x => x.id === state.selectedRegionId); if (!r) return;
+  document.getElementById("rc-name").textContent = getRegionName(r.id);
+  document.getElementById("rc-country").textContent = state.selectedCountryName ? `📍 ${state.selectedCountryName}` : "";
   document.getElementById("rc-pop").textContent = r.pop + "M";
   document.getElementById("rc-edu").textContent = r.education + "%";
   document.getElementById("rc-speed").textContent = r.infoSpeed.toFixed(2) + "x";
   document.getElementById("rc-costmult").textContent = r.costMult.toFixed(2) + "x";
-  document.getElementById("rc-bel").textContent = `${r.bel.toFixed(1)}% / ${cap}%`;
-  document.getElementById("rc-inc").textContent = "+$" + getRegionDailyIncome(r).toFixed(1);
+  document.getElementById("rc-bel").textContent = `${r.bel.toFixed(1)}% / ${getRegionCap(r)}%`;
+  document.getElementById("rc-inc").textContent = "+$" + getRegIncome(r).toFixed(1);
 
-  const adCost = getRegionalPrice(140, r);
-  const adBtn = document.getElementById("rc-ad");
-
+  const adCost = getRegPrice(140, r), adBtn = document.getElementById("rc-ad");
   if (r.bought) {
-    if (r.sideFakeCd > 0) {
-      adBtn.disabled = true;
-      adBtn.textContent = `Побочный фейк (${r.sideFakeCd} дн.)`;
-    } else {
-      adBtn.disabled = false;
-      adBtn.textContent = `🔥 Вкинуть побочный фейк`;
-    }
+    adBtn.disabled = r.sideFakeCd > 0;
+    adBtn.textContent = r.sideFakeCd > 0 ? d.sideFakeCd(r.sideFakeCd) : d.sideFakeBtn;
   } else {
-    adBtn.textContent = r.bel === 0
-      ? `Таргет ($${adCost}) [Открыть]`
-      : `Таргет ($${adCost}) [+3%]`;
+    adBtn.textContent = r.bel === 0 ? d.adOpen(adCost) : d.adBoost(adCost);
     adBtn.disabled = state.money < adCost;
   }
-
-  const buyoutCost = getRegionalPrice(r.buyoutBase, r);
-  const badge = document.getElementById("rc-badge");
-  const btn = document.getElementById("rc-buyout");
-  if (r.bought) {
-    badge.classList.remove("hidden");
-    btn.disabled = true;
-    btn.textContent = "СМИ под контролем";
-  } else {
-    badge.classList.add("hidden");
-    btn.textContent = `Выкупить СМИ ($${buyoutCost}) [75%]`;
-    btn.disabled = !(r.bel >= 75 && state.money >= buyoutCost);
-  }
+  const boCost = getRegPrice(r.buyoutBase, r), badge = document.getElementById("rc-badge"), boBtn = document.getElementById("rc-buyout");
+  badge.classList.toggle("hidden", !r.bought);
+  boBtn.textContent = r.bought ? d.controlled : d.buyoutBtn(boCost);
+  boBtn.disabled = r.bought || !(r.bel >= 75 && state.money >= boCost);
 }
 
 function buyRegionalAd() {
-  const r = regions.find(x => x.id === state.selectedRegionId);
-  if (!r) return;
-
+  const d = t(), r = regions.find(x => x.id === state.selectedRegionId); if (!r) return;
   if (r.bought) {
     if (r.sideFakeCd > 0) return;
-    registerAction();
-    r.sideFakeCd = 15;
-    const fake = sideFakesList[Math.floor(Math.random() * sideFakesList.length)];
-    const cash = Math.round((85 + Math.random() * 65) * getHypeMultiplier());
-    state.money += cash;
-    state.hype = Math.min(100, state.hype + 6);
-    state.factCheck = Math.max(0, state.factCheck - 2);
-    setTicker(`ВБРОС В ${r.name.toUpperCase()}: «${fake}» (+$${cash}, +6% хайпа, фактчекеры отвлечены!)`);
-    updateUI();
-    return;
+    registerAction(); r.sideFakeCd = 15;
+    const fake = d.sideFakes[Math.floor(Math.random() * d.sideFakes.length)];
+    const cash = Math.round((85 + Math.random() * 65) * getHypeMult());
+    state.money += cash; state.hype = Math.min(100, state.hype + 6); state.factCheck = Math.max(0, state.factCheck - 2);
+    setTicker(`${getRegionName(r.id)}: «${fake}» (+$${cash})`); updateUI(); return;
   }
-
-  const cost = getRegionalPrice(140, r);
-  if (state.money < cost) return;
-
-  registerAction();
-  state.money -= cost;
-  const wasZero = r.bel === 0;
-  const cap = getRegionCap(r);
-  r.bel = Math.min(Math.max(cap, r.bel + 3.0), r.bel + (wasZero ? 2.5 : 3.5));
+  const cost = getRegPrice(140, r); if (state.money < cost) return;
+  registerAction(); state.money -= cost;
+  r.bel = Math.min(Math.max(getRegionCap(r), r.bel + 3), r.bel + (r.bel === 0 ? 2.5 : 3.5));
   state.hype = Math.min(100, state.hype + 4);
-  setTicker(wasZero
-    ? `ТАРГЕТ СРАБОТАЛ! Твоя реклама пробилась в регион: ${r.name}!`
-    : `Рекламная кампания усилила позиции в регионе: ${r.name}.`);
-  updateUI();
+  setTicker(`${getRegionName(r.id)}: Ads (${r.bel.toFixed(1)}%)`); updateUI();
 }
 
 function buyoutRegion() {
-  const r = regions.find(x => x.id === state.selectedRegionId);
-  const cost = getRegionalPrice(r.buyoutBase, r);
+  const r = regions.find(x => x.id === state.selectedRegionId), cost = getRegPrice(r.buyoutBase, r);
   if (!r || r.bought || r.bel < 75 || state.money < cost) return;
-  registerAction();
-  state.money -= cost;
-  r.bought = true;
-  r.bel = 100;
-  state.hype = Math.min(100, state.hype + 10);
-  setTicker(`МОНОПОЛИЯ! «${state.mediaName}» выкупил все главные СМИ в регионе: ${r.name}!`);
-  updateUI();
+  registerAction(); state.money -= cost; r.bought = true; r.bel = 100; state.hype = Math.min(100, state.hype + 10);
+  setTicker(`★ ${state.mediaName} — ${getRegionName(r.id)}`); updateUI();
 }
 
-// --- UPGRADES ---
-function switchTab(tabName, btnEl) {
+function switchTab(name, btn) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-  btnEl.classList.add("active");
-  document.getElementById(`tab-${tabName}`).classList.add("active");
+  btn.classList.add("active"); document.getElementById(`tab-${name}`).classList.add("active");
 }
 
 function renderRegionalUpgrades() {
-  const r = regions.find(x => x.id === state.selectedRegionId);
-  document.getElementById("upg-reg-name").textContent = r.name;
+  const d = t(), r = regions.find(x => x.id === state.selectedRegionId), rName = getRegionName(r.id);
+  document.getElementById("upg-reg-name").textContent = rName;
   document.getElementById("upg-reg-mult").textContent = (r.costMult * state.inflation).toFixed(2) + "x";
-
-  const container = document.getElementById("list-regional");
-  container.innerHTML = "";
-
-  regionalUpgradeTemplates.forEach(u => {
-    const st = r.upgState[u.id];
-    const isMax = st.level >= MAX_REGIONAL_LVL;
-    const onCd = st.cd > 0;
-    const price = getRegionalPrice(u.baseCost, r, st.level);
-
-    let btnText = `Купить (Ур. ${st.level + 1})`;
-    if (isMax) btnText = "Макс. уровень ✓";
-    else if (onCd) btnText = `Перезарядка: ${st.cd} дн.`;
-
-    const card = document.createElement("div");
-    card.className = `upgrade-card ${isMax ? "bought" : ""}`;
-    card.innerHTML = `
-      <div class="upgrade-top">
-        <span class="upgrade-title">${u.name}</span>
-        <span class="upgrade-lvl">Ур. ${st.level}/${MAX_REGIONAL_LVL}</span>
-        <span class="upgrade-cost">${isMax ? "МАКС" : "$" + price}</span>
-      </div>
-      <div class="upgrade-desc">${u.desc}</div>
-      <button class="upgrade-btn" ${isMax || onCd || state.money < price ? "disabled" : ""} onclick="buyRegionalUpgrade('${u.id}')">
-        ${btnText}
-      </button>
-    `;
-    container.appendChild(card);
+  const c = document.getElementById("list-regional"); c.innerHTML = "";
+  regTemplates.forEach(u => {
+    const st = r.upgState[u.id], info = d.regUpgs[u.id], isMax = st.level >= MAX_LVL, price = getRegPrice(u.baseCost, r, st.level);
+    const btnTxt = isMax ? d.maxBtn : st.cd > 0 ? d.cdBtn(st.cd) : d.buyForRegion(st.level + 1, rName);
+    c.innerHTML += `<div class="upgrade-card ${isMax?'bought':''}"><div class="upgrade-top"><span class="upgrade-title">${info.name}</span><span class="upgrade-lvl">${d.lvlLabel(st.level,MAX_LVL)}</span><span class="upgrade-cost">${isMax?d.maxCost:'$'+price}</span></div><div class="upgrade-desc">${info.desc}</div><button class="upgrade-btn" ${isMax||st.cd>0||state.money<price?'disabled':''} onclick="buyRegUpg('${u.id}')">${btnTxt}</button></div>`;
   });
 }
 
-function buyRegionalUpgrade(upgId) {
-  const r = regions.find(x => x.id === state.selectedRegionId);
-  const u = regionalUpgradeTemplates.find(x => x.id === upgId);
-  if (!r || !u) return;
-
-  const st = r.upgState[upgId];
-  if (st.level >= MAX_REGIONAL_LVL || st.cd > 0) return;
-
-  const price = getRegionalPrice(u.baseCost, r, st.level);
-  if (state.money < price) return;
-
-  registerAction();
-  state.money -= price;
-  st.level++;
-  st.cd = u.cdDays;
-  state.virality += u.viralBonus;
-  state.hype = Math.min(100, state.hype + u.hypeBonus);
-  state.inflation += 0.02;
+function buyRegUpg(id) {
+  const d = t(), r = regions.find(x => x.id === state.selectedRegionId), u = regTemplates.find(x => x.id === id);
+  const st = r.upgState[id], price = getRegPrice(u.baseCost, r, st.level);
+  if (st.level >= MAX_LVL || st.cd > 0 || state.money < price) return;
+  registerAction(); state.money -= price; st.level++; st.cd = u.cdDays;
+  state.virality += u.viralBonus; state.hype = Math.min(100, state.hype + u.hypeBonus); state.inflation += 0.02;
   if (r.bel < 1) r.bel = 1.5;
-
-  setTicker(`${r.name}: «${u.name}» повышено до Ур. ${st.level} (потолок охвата: ${getRegionCap(r)}%).`);
-  renderRegionalUpgrades();
-  renderGlobalUpgrades();
-  updateUI();
+  setTicker(`${getRegionName(r.id)}: ${d.regUpgs[id].name} (${d.lvlLabel(st.level, MAX_LVL)})`);
+  renderRegionalUpgrades(); renderGlobalUpgrades(); updateUI();
 }
 
 function renderGlobalUpgrades() {
-  const contGlobal = document.getElementById("list-global");
-  const contMoney = document.getElementById("list-money");
-  contGlobal.innerHTML = "";
-  contMoney.innerHTML = "";
-
+  const d = t(), cg = document.getElementById("list-global"), cm = document.getElementById("list-money");
+  cg.innerHTML = ""; cm.innerHTML = "";
   globalUpgrades.forEach(u => {
-    const isBought = state.boughtGlobal.has(u.id);
-    const price = getGlobalPrice(u.baseCost);
-    const card = document.createElement("div");
-    card.className = `upgrade-card ${isBought ? "bought" : ""}`;
-    card.innerHTML = `
-      <div class="upgrade-top">
-        <span class="upgrade-title">${u.name}</span>
-        <span class="upgrade-cost">${isBought ? "Куплено" : "$" + price}</span>
-      </div>
-      <div class="upgrade-desc">${u.desc}</div>
-      <button class="upgrade-btn" ${isBought || state.money < price ? "disabled" : ""} onclick="buyGlobalUpgrade('${u.id}')">
-        ${isBought ? "Активно ✓" : "Купить"}
-      </button>
-    `;
-    (u.cat === "money" ? contMoney : contGlobal).appendChild(card);
+    const bought = state.boughtGlobal.has(u.id), info = d.globUpgs[u.id], price = getGlobPrice(u.baseCost);
+    const html = `<div class="upgrade-card ${bought?'bought':''}"><div class="upgrade-top"><span class="upgrade-title">${info.name}</span><span class="upgrade-cost">${bought?d.boughtText:'$'+price}</span></div><div class="upgrade-desc">${info.desc}</div><button class="upgrade-btn" ${bought||state.money<price?'disabled':''} onclick="buyGlobUpg('${u.id}')">${bought?d.activeBtn:d.buyBtn}</button></div>`;
+    (u.cat === "money" ? cm : cg).innerHTML += html;
   });
 }
 
-function buyGlobalUpgrade(id) {
-  const u = globalUpgrades.find(x => x.id === id);
-  if (!u || state.boughtGlobal.has(id)) return;
-  const price = getGlobalPrice(u.baseCost);
-  if (state.money < price) return;
-
-  registerAction();
-  state.money -= price;
-  state.boughtGlobal.add(id);
-  state.inflation += 0.04;
-  u.effect();
-  setTicker(`ГЛОБАЛЬНЫЙ АПГРЕЙД: «${u.name}»!`);
-  renderGlobalUpgrades();
-  renderRegionalUpgrades();
-  updateUI();
+function buyGlobUpg(id) {
+  const u = globalUpgrades.find(x => x.id === id), price = getGlobPrice(u.baseCost);
+  if (!u || state.boughtGlobal.has(id) || state.money < price) return;
+  registerAction(); state.money -= price; state.boughtGlobal.add(id); state.inflation += 0.04; u.effect();
+  setTicker(t().globUpgs[id].name); renderGlobalUpgrades(); renderRegionalUpgrades(); updateUI();
 }
 
-// --- HEADLINES ---
 function updateHeadlinePreview() {
-  const t = document.getElementById("hl-trigger").value;
-  const p = document.getElementById("hl-proof").value;
-  document.getElementById("headline-preview").textContent = `${t} ${state.myth} ${p}`;
+  const a = document.getElementById("hl-trigger").value, b = document.getElementById("hl-proof").value;
+  if (a && b) document.getElementById("headline-preview").textContent = `${a} ${state.myth} ${b}`;
 }
 
 function publishHeadline() {
   if (state.headlineCooldown > 0) return;
   registerAction();
-  const t = document.getElementById("hl-trigger").value;
-  const p = document.getElementById("hl-proof").value;
-  const text = document.getElementById("headline-preview").textContent;
+  const trigSel = document.getElementById("hl-trigger");
+  const a = trigSel.value, b = document.getElementById("hl-proof").value;
+  const idx = trigSel.selectedIndex;
+  const mult = (a === state.lastHlTrigger || b === state.lastHlProof) ? 0.5 : 1.0;
+  state.lastHlTrigger = a; state.lastHlProof = b; state.headlineCooldown = 10;
 
-  const isRepeated = (t === state.lastHlTrigger || p === state.lastHlProof);
-  state.lastHlTrigger = t;
-  state.lastHlProof = p;
-  state.headlineCooldown = 10;
+  let cash = Math.round((25 + getGlobalBel() * 2.2) * getHypeMult() * mult);
+  let hg = Math.round(10 * mult);
+  let belGain = 1.6 * mult;
+  let fcDelta = 1.8 * state.defenseFactor;
 
-  const mult = isRepeated ? 0.5 : 1.0;
-  const bonusCash = Math.round((25 + getGlobalBelieversPct() * 2.2) * getHypeMultiplier() * mult);
-  const hypeGain = Math.round(10 * mult);
+  if (idx === 0) state.virality += Math.round(3 * mult);
+  else if (idx === 1) belGain *= 1.8;
+  else if (idx === 2) hg = Math.round(18 * mult);
+  else if (idx === 3) cash = Math.round(cash * 1.9);
+  else if (idx === 4) { hg = Math.round(14 * mult); state.virality += Math.round(2 * mult); }
+  else if (idx === 5) fcDelta = -3 * mult;
+  else if (idx === 6) { cash = Math.round(cash * 1.5); belGain *= 1.4; }
 
-  state.money += bonusCash;
-  state.hype = Math.min(100, state.hype + hypeGain);
+  state.money += cash;
+  state.hype = Math.min(100, state.hype + hg);
   regions.forEach(r => {
-    if (r.bel > 0 && !r.bought) {
-      const cap = getRegionCap(r);
-      if (r.bel < cap) r.bel = Math.min(cap, r.bel + (1.6 * mult));
+    if (r.bel > 0 && !r.bought && r.bel < getRegionCap(r)) {
+      r.bel = Math.min(getRegionCap(r), r.bel + belGain);
     }
   });
-  state.factCheck = Math.min(100, state.factCheck + 1.8 * state.defenseFactor);
-
-  setTicker(isRepeated
-    ? `ПОВТОР! Зрители зевают от старого шаблона (+${hypeGain}% хайпа, +$${bonusCash}).`
-    : `СЕНСАЦИЯ: ${text} (+${hypeGain}% хайпа, +$${bonusCash})`);
+  state.factCheck = Math.max(0, Math.min(100, state.factCheck + fcDelta));
+  setTicker(`${document.getElementById("headline-preview").textContent} (+${hg}% | +$${cash})`);
   updateUI();
 }
 
-// --- STUDIO EVENTS ROUTER (INTERVIEW VS SCIENTIST DEBATE) ---
+// --- STUDIO EVENTS (DEBATE + MORNING SHOW INTERVIEW) ---
 function triggerStudioEvent() {
   const debateChance = state.lastEventType === "interview" ? 0.72 : (0.30 + state.factCheck / 200);
-  if (Math.random() < debateChance) {
-    state.lastEventType = "debate";
-    openScientistDebate();
-  } else {
-    state.lastEventType = "interview";
-    openMorningInterview();
-  }
+  if (Math.random() < debateChance) { state.lastEventType = "debate"; openScientistDebate(); }
+  else { state.lastEventType = "interview"; openMorningInterview(); }
 }
 
 function setStudioTheme(mode) {
-  const modalBox = document.getElementById("studio-modal-box");
-  const stage = document.getElementById("studio-stage");
-  const banner = document.getElementById("studio-show-name");
-  const screenTitle = document.getElementById("studio-screen-title");
-  const hostJacket = document.getElementById("host-jacket");
-
-  if (mode === "debate") {
-    modalBox.classList.add("mode-debate");
-    stage.className = "studio-stage theme-debate";
-    banner.textContent = "⚡ ДЕБАТЫ С УЧЁНЫМИ";
-    screenTitle.textContent = "БАТТЛ В ПРЯМОЙ ЭФИРЕ";
-    hostJacket.setAttribute("fill", "#e2e8f0");
-  } else {
-    modalBox.classList.remove("mode-debate");
-    stage.className = "studio-stage theme-morning";
-    banner.textContent = "☀️ ДОБРОЕ УТРО, ПЛАНЕТА!";
-    screenTitle.textContent = "ПРЯМОЙ ЭФИР";
-    hostJacket.setAttribute("fill", "#1d4ed8");
-  }
+  const d = t();
+  document.getElementById("studio-modal-box").classList.toggle("mode-debate", mode === "debate");
+  document.getElementById("studio-stage").className = "studio-stage " + (mode === "debate" ? "theme-debate" : "theme-morning");
+  document.getElementById("studio-show-name").textContent = mode === "debate" ? d.debateBanner : d.morningBanner;
+  document.getElementById("studio-screen-title").textContent = mode === "debate" ? d.debateScreen : d.morningScreen;
+  document.getElementById("host-jacket").setAttribute("fill", mode === "debate" ? "#e2e8f0" : "#1d4ed8");
 }
 
-// --- 1. SCIENTIST DEBATES ---
 function openScientistDebate() {
-  state.paused = true;
-  setStudioTheme("debate");
-  startDebateMusic();
-  animateSpeaker("host");
-  playSimlish("host");
-
-  const opponent = debateScientists[Math.floor(Math.random() * debateScientists.length)];
-  const bribeCost = Math.round(170 * state.inflation);
-
-  const winChanceAggro = Math.min(90, Math.round((0.48 + state.debateBonus) * 100));
-  const winChanceSafe = Math.min(95, Math.round((0.66 + state.debateBonus) * 100));
-
-  document.getElementById("debate-desc").innerHTML =
-    `<strong>ЖЁСТКИЕ ДЕБАТЫ:</strong> ${opponent} вызывает тебя, ${state.playerName}, в прямой эфир, чтобы камня на камне не оставить от мифа <em>«${state.myth}»</em>. Выбери тактику:`;
-
+  const d = t(); state.paused = true; setStudioTheme("debate"); startDebateMusic(); animateSpeaker("host"); playSimlish("host");
+  const opp = d.scientists[Math.floor(Math.random() * d.scientists.length)], bribe = Math.round(170 * state.inflation);
+  const wA = Math.min(90, Math.round((0.48 + state.debateBonus) * 100)), wS = Math.min(95, Math.round((0.66 + state.debateBonus) * 100));
+  const c = {
+    ru: { i:`<strong>ДЕБАТЫ:</strong> ${opp} вызывает тебя, ${state.playerName}, в эфир по теме «${state.myth}».`, a:`🔥 Перекричать (${wA}%)`, s:`🤔 «Я просто задаю вопросы» (${wS}%)`, b:`💵 Подкупить режиссёра ($${bribe})`, d:`🏃 Слиться с эфира` },
+    en: { i:`<strong>DEBATE:</strong> ${opp} challenges you, ${state.playerName}, live over '${state.myth}'.`, a:`🔥 Shout over (${wA}%)`, s:`🤔 'Just asking questions' (${wS}%)`, b:`💵 Bribe director ($${bribe})`, d:`🏃 Bail out` },
+    es: { i:`<strong>DEBATE:</strong> ${opp} te reta, ${state.playerName}, al aire sobre '${state.myth}'.`, a:`🔥 Gritar encima (${wA}%)`, s:`🤔 'Solo hago preguntas' (${wS}%)`, b:`💵 Sobornar director ($${bribe})`, d:`🏃 Huir` }
+  }[state.lang];
+  document.getElementById("debate-desc").innerHTML = c.i;
   document.getElementById("debate-options").innerHTML = `
-    <button class="debate-btn" onclick="resolveScientistDebate('aggro', ${winChanceAggro})">
-      <span class="debate-btn-title">🔥 Перекричать и перейти на личности (Шанс: ${winChanceAggro}%)</span>
-      <span class="debate-btn-sub">Победа: +20% хайпа, +$130. Проигрыш: -22% хайпа, -2% верующих, +8% фактчекинга.</span>
-    </button>
-    <button class="debate-btn" onclick="resolveScientistDebate('manipulate', ${winChanceSafe})">
-      <span class="debate-btn-title">🤔 Тактика «Я просто задаю вопросы» (Шанс: ${winChanceSafe}%)</span>
-      <span class="debate-btn-sub">Победа: +13% хайпа, +$50. Проигрыш: -14% хайпа, +5% фактчекинга.</span>
-    </button>
-    <button class="debate-btn" ${state.money < bribeCost ? "disabled" : ""} onclick="resolveScientistDebate('bribe', 95, ${bribeCost})">
-      <span class="debate-btn-title">💵 Подкупить режиссёра эфира ($${bribeCost}) (Шанс: 95%)</span>
-      <span class="debate-btn-sub">Учёному выключат микрофон в ключевой момент. Победа: +16% хайпа.</span>
-    </button>
-    <button class="debate-btn decline" onclick="resolveScientistDebate('decline', 0)">
-      <span class="debate-btn-title">🏃 Отказаться от дебатов (Слиться)</span>
-      <span class="debate-btn-sub">Зрители разочарованы: -18% хайпа, -2% верующих, +5% фактчекинга.</span>
-    </button>
-  `;
-
+    <button class="debate-btn" onclick="resolveDebate('aggro',${wA})"><span class="debate-btn-title">${c.a}</span></button>
+    <button class="debate-btn" onclick="resolveDebate('safe',${wS})"><span class="debate-btn-title">${c.s}</span></button>
+    <button class="debate-btn" ${state.money<bribe?'disabled':''} onclick="resolveDebate('bribe',95,${bribe})"><span class="debate-btn-title">${c.b}</span></button>
+    <button class="debate-btn decline" onclick="resolveDebate('decline',0)"><span class="debate-btn-title">${c.d}</span></button>`;
   document.getElementById("debate-modal").classList.remove("hidden");
 }
 
-function resolveScientistDebate(type, chance, cost = 0) {
-  animateSpeaker("player");
-  playSimlish("player");
-
-  document.getElementById("debate-modal").classList.add("hidden");
-  state.paused = false;
-  if (musicEnabled) startJazz();
-
+function resolveDebate(type, chance, cost=0) {
+  animateSpeaker("player"); playSimlish("player");
+  document.getElementById("debate-modal").classList.add("hidden"); state.paused = false; if (musicEnabled) startJazz();
   if (type === "decline") {
-    state.hype = Math.max(5, state.hype - 18);
-    state.factCheck = Math.min(100, state.factCheck + 5 * state.defenseFactor);
-    regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, r.bel - 2.0); });
-    setTicker(`ПОЗОР! ${state.playerName} испугался дебатов с учёным (-18% хайпа, +5% фактчекинга)!`);
+    state.hype = Math.max(5, state.hype - 18); state.factCheck = Math.min(100, state.factCheck + 5 * state.defenseFactor);
+    regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, r.bel - 2); });
   } else {
-    registerAction();
-    if (cost > 0) state.money -= cost;
-    const won = (Math.random() * 100) < chance;
-
-    if (won) {
-      if (type === "aggro") {
-        state.hype = Math.min(100, state.hype + 20);
-        state.money += 130;
-        setTicker(`ТРИУМФ НА ДЕБАТАХ! Ты перекричал профессора в прямом эфире (+20% хайпа, +$130)!`);
-      } else if (type === "manipulate") {
-        state.hype = Math.min(100, state.hype + 13);
-        state.money += 50;
-        setTicker(`ХИТРЫЙ ХОД! Учёный растерялся от твоих вопросов (+13% хайпа, +$50).`);
-      } else {
-        state.hype = Math.min(100, state.hype + 16);
-        setTicker(`КУПЛЕННЫЙ ЭФИР прошёл идеально! Микрофон учёного «случайно» отключился (+16% хайпа).`);
-      }
+    registerAction(); state.money -= cost;
+    if (Math.random() * 100 < chance) {
+      state.hype = Math.min(100, state.hype + (type==="aggro"?20:type==="safe"?13:16));
+      state.money += (type==="aggro"?130:type==="safe"?50:0);
     } else {
-      const hypeLoss = type === "aggro" ? 22 : 14;
-      const fcGain = type === "aggro" ? 8 : 5;
-      const belLoss = type === "aggro" ? 2.2 : 1.0;
-      state.hype = Math.max(5, state.hype - hypeLoss);
-      state.factCheck = Math.min(100, state.factCheck + fcGain * state.defenseFactor);
-      regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, r.bel - belLoss); });
-      setTicker(`РАЗГРОМ НА ДЕБАТАХ! Учёный поймал тебя на лжи (-${hypeLoss}% хайпа, +${Math.round(fcGain * state.defenseFactor)}% фактчекинга)!`);
+      state.hype = Math.max(5, state.hype - (type==="aggro"?22:14));
+      state.factCheck = Math.min(100, state.factCheck + (type==="aggro"?8:5) * state.defenseFactor);
+      regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, r.bel - (type==="aggro"?2.2:1)); });
     }
   }
   updateUI();
 }
 
-// --- 2. MORNING SHOW NARRATIVE INTERVIEW ---
-const narrativePool = {
-  culprit: [
-    {
-      brief: "крупные технокорпорации",
-      match: "Обычные воротилы из Кремниевой долины и монополисты — им плевать на правду!",
-      evade: "Слушайте, там замешано слишком много людей, не будем тыкать пальцем."
-    },
-    {
-      brief: "тайные спецслужбы",
-      match: "Люди в погонах из закрытых ведомств, которые держат всё под грифом «секретно»!",
-      evade: "Официальные структуры просто делают вид, что ничего не происходит."
-    },
-    {
-      brief: "учёные-грантоеды",
-      match: "Академическая мафия из университетов — они боятся потерять свои тёплые кресла!",
-      evade: "В научном мире сейчас вообще нет единого мнения, всё очень сложно."
-    },
-    {
-      brief: "древние банковские династии",
-      match: "Теневые финансисты и миллиардеры, которые дёргают за ниточки из-за кулис!",
-      evade: "Деньги любят тишину, но я бы не стал называть конкретные фамилии."
-    }
-  ],
-  proof: [
-    {
-      brief: "слив от бывшего инженера",
-      match: "Человек, который сам собирал это оборудование, не выдержал и передал нам файлы!",
-      evade: "Наши источники просили сохранить анонимность ради их безопасности."
-    },
-    {
-      brief: "случайный сбой на спутнике",
-      match: "Камеры на орбите на секунду зависли, и весь мир увидел картинку без ретуши!",
-      evade: "Любой внимательный человек сам может заметить странности, если посмотрит в небо."
-    },
-    {
-      brief: "засекреченный архив 70-х годов",
-      match: "Пожелтевшие папки полувековой давности, которые забыли сжечь в подвале!",
-      evade: "История хранит много тайн, просто их не печатают в школьных книжках."
-    },
-    {
-      brief: "личный эксперимент в гараже",
-      match: "Мы сами взяли приборы, всё замерили дома — и цифры не сошлись с официальными!",
-      evade: "Здравый смысл и собственный опыт важнее любых чужих формул."
-    }
-  ],
-  motive: [
-    {
-      brief: "ради гигантских прибылей",
-      match: "Всё банально: пока люди верят в их сказки, они стригут с нас миллиарды!",
-      evade: "У каждой стороны есть свои интересы, время всё расставит по местам."
-    },
-    {
-      brief: "чтобы скрыть свой позорный провал",
-      match: "Они облажались десятилетия назад, а теперь боятся признаться, чтобы их не смели!",
-      evade: "Никто не любит признавать ошибки, особенно на таком высоком уровне."
-    },
-    {
-      brief: "для тотального контроля над умами",
-      match: "Если человек верит в их картину мира, им легко управлять как марионеткой!",
-      evade: "Информационное поле сейчас очень перегружено, людям тяжело разобраться."
-    },
-    {
-      brief: "чтобы продавать бесполезные учебники и курсы",
-      match: "Целая индустрия образования рухнет в один день, если правда выйдет наружу!",
-      evade: "Система слишком неповоротлива, чтобы меняться так быстро."
-    }
-  ]
+const nPool = {
+  ru: {
+    c: [{b:"крупные корпорации",m:"Воротилы бизнеса — им плевать на правду!",e:"Там замешано слишком много людей."},{b:"тайные спецслужбы",m:"Люди в погонах под грифом «секретно»!",e:"Официальные структуры просто молчат."},{b:"учёные-грантоеды",m:"Академическая мафия боится потерять кресла!",e:"В науке нет единого мнения."}],
+    p: [{b:"слив от инженера",m:"Человек, собравший прибор, передал нам файлы!",e:"Источники просили анонимность."},{b:"сбой на спутнике",m:"Камеры на орбите зависли без ретуши!",e:"Любой заметит странности в небе."},{b:"архив из прошлого века",m:"Старые папки из засекреченного подвала!",e:"История хранит много тайн."}],
+    m: [{b:"ради прибылей",m:"Пока люди верят, они стригут миллиарды!",e:"У каждой стороны свои интересы."},{b:"скрыть провал",m:"Они облажались давно и боятся признаться!",e:"Никто не любит признавать ошибки."},{b:"контроль над умами",m:"Так людьми легко управлять как марионетками!",e:"Инфополе сейчас перегружено."}]
+  },
+  en: {
+    c: [{b:"big tech",m:"Silicon Valley monopolies don't care about truth!",e:"Many players are involved."},{b:"secret agencies",m:"Classified operatives keeping lids shut!",e:"Officials stay quiet."},{b:"academics",m:"University insiders protecting grants!",e:"Science is divided."}],
+    p: [{b:"an engineer leak",m:"The builder snapped and sent us raw files!",e:"Sources stay anonymous."},{b:"a satellite glitch",m:"Orbit cams froze without filters!",e:"Look up and you'll see."},{b:"a last-century archive",m:"Old folders left in a vault!",e:"History hides plenty."}],
+    m: [{b:"massive profits",m:"They cash in billions on the story!",e:"Everyone has angles."},{b:"hiding a blunder",m:"They messed up decades ago!",e:"Nobody admits mistakes."},{b:"mind control",m:"Easy to steer the crowd like puppets!",e:"The feed is noisy."}]
+  },
+  es: {
+    c: [{b:"grandes tecnológicas",m:"¡Los monopolios ignoran la verdad!",e:"Hay muchos implicados."},{b:"agencias secretas",m:"¡Operativos bajo secreto total!",e:"Los oficiales callan."},{b:"académicos",m:"¡Temen perder sus becas!",e:"La ciencia está dividida."}],
+    p: [{b:"una filtración",m:"¡Un ingeniero nos dio los archivos!",e:"Fuentes anónimas."},{b:"fallo satelital",m:"¡Las cámaras orbitales fallaron sin filtro!",e:"Basta mirar al cielo."},{b:"archivo del siglo pasado",m:"¡Carpetas olvidadas en un sótano!",e:"La historia oculta mucho."}],
+    m: [{b:"ganancias",m:"¡Cobran miles de millones con el cuento!",e:"Cada bando tiene intereses."},{b:"ocultar un error",m:"¡Fallaron hace décadas!",e:"Nadie admite errores."},{b:"control mental",m:"¡Manejan a la gente como títeres!",e:"Hay demasiado ruido."}]
+  }
 };
 
-let studioSession = null;
-
+let ses = null;
 function openMorningInterview() {
-  state.paused = true;
-  setStudioTheme("morning");
-  startMorningShowMusic();
-
-  const cIdx = Math.floor(Math.random() * narrativePool.culprit.length);
-  const pIdx = Math.floor(Math.random() * narrativePool.proof.length);
-  const mIdx = Math.floor(Math.random() * narrativePool.motive.length);
-
-  studioSession = {
-    cIdx, pIdx, mIdx,
-    step: 0,
-    hypeDelta: 0,
-    moneyDelta: 0,
-    fcDelta: 0,
-    belDelta: 0,
-    matches: 0,
-    contradictions: 0
-  };
-
-  const cText = narrativePool.culprit[cIdx].brief;
-  const pText = narrativePool.proof[pIdx].brief;
-  const mText = narrativePool.motive[mIdx].brief;
-
-  animateSpeaker("host");
-  playSimlish("host");
-
-  document.getElementById("debate-desc").innerHTML =
-    `<strong>ПЕРВАЯ ЧАСТЬ ЭФИРА (ЗАПОМНИ СВОЮ ЛЕГЕНДУ):</strong><br>
-    ${state.playerName}, вы только что рассказали зрителям, что правду о том, что <em>«${state.myth}»</em>, скрывают <strong>${cText}</strong>. Вы сослались на <strong>${pText}</strong> и заявили, что они делают это <strong>${mText}</strong>.`;
-
-  document.getElementById("debate-options").innerHTML = `
-    <button class="debate-btn" onclick="nextStudioQuestion()">
-      <span class="debate-btn-title">📺 Я запомнил! Перейти к вопросам ведущего</span>
-      <span class="debate-btn-sub">Не противоречь себе, иначе тебя поймают на лжи и вырастет фактчекинг!</span>
-    </button>
-    <button class="debate-btn decline" onclick="declineInterview()">
-      <span class="debate-btn-title">🏃 Сбежать из студии до вопросов</span>
-      <span class="debate-btn-sub">Позор: -18% хайпа, отписки верующих, +6% фактчекинга.</span>
-    </button>
-  `;
-
+  state.paused = true; setStudioTheme("morning"); startMorningShowMusic(); animateSpeaker("host"); playSimlish("host");
+  const ps = nPool[state.lang] || nPool.ru;
+  ses = { ps, ci:Math.floor(Math.random()*3), pi:Math.floor(Math.random()*3), mi:Math.floor(Math.random()*3), step:0, hd:0, md:0, fd:0, bd:0, ok:0 };
+  const txt = {
+    ru: [`<strong>ЗАПОМНИ ЛЕГЕНДУ:</strong> ${state.playerName}, ты заявил, что «${state.myth}» скрывают <strong>${ps.c[ses.ci].b}</strong>, доказательство — <strong>${ps.p[ses.pi].b}</strong>, цель — <strong>${ps.m[ses.mi].b}</strong>.`, "📺 Перейти к вопросам", "🏃 Сбежать"],
+    en: [`<strong>MEMORIZE STORY:</strong> ${state.playerName}, you claimed '${state.myth}' is hidden by <strong>${ps.c[ses.ci].b}</strong>, proof: <strong>${ps.p[ses.pi].b}</strong>, motive: <strong>${ps.m[ses.mi].b}</strong>.`, "📺 Answer questions", "🏃 Walk off"],
+    es: [`<strong>MEMORIZA:</strong> ${state.playerName}, dijiste que '${state.myth}' lo ocultan <strong>${ps.c[ses.ci].b}</strong>, prueba: <strong>${ps.p[ses.pi].b}</strong>, fin: <strong>${ps.m[ses.mi].b}</strong>.`, "📺 Responder preguntas", "🏃 Salir"]
+  }[state.lang];
+  document.getElementById("debate-desc").innerHTML = txt[0];
+  document.getElementById("debate-options").innerHTML = `<button class="debate-btn" onclick="nextQ()"><span class="debate-btn-title">${txt[1]}</span></button><button class="debate-btn decline" onclick="resolveDebate('decline',0)"><span class="debate-btn-title">${txt[2]}</span></button>`;
   document.getElementById("debate-modal").classList.remove("hidden");
 }
 
-function declineInterview() {
-  document.getElementById("debate-modal").classList.add("hidden");
-  state.paused = false;
-  if (musicEnabled) startJazz();
-  state.hype = Math.max(5, state.hype - 18);
-  state.factCheck = Math.min(100, state.factCheck + 6 * state.defenseFactor);
-  regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, r.bel - 2.5); });
-  setTicker(`ПОЗОР! ${state.playerName} сбежал прямо из студии. Хайп -18%, фактчекинг +6%!`);
-  updateUI();
-}
-
-function nextStudioQuestion() {
-  const s = studioSession;
-  if (s.step >= 3) {
-    finishStudioInterview();
-    return;
+function nextQ() {
+  if (ses.step >= 3) {
+    document.getElementById("debate-modal").classList.add("hidden"); state.paused = false; registerAction(); if (musicEnabled) startJazz();
+    state.hype = Math.max(5, Math.min(100, state.hype + ses.hd)); state.money += ses.md;
+    state.factCheck = Math.min(100, state.factCheck + ses.fd * state.defenseFactor);
+    regions.forEach(r => { if (r.bel > 0 && !r.bought) r.bel = Math.max(0, Math.min(100, r.bel + ses.bd)); });
+    setTicker(`TV ${ses.ok}/3 | ${ses.hd>=0?'+':''}${ses.hd}% | +$${ses.md}`); updateUI(); return;
   }
-
-  animateSpeaker("host");
-  playSimlish("host");
-
-  let qText = "";
-  let pool = null;
-  let correctIdx = 0;
-
-  if (s.step === 0) {
-    qText = `«Итак, ${state.playerName}, вы говорите, что вокруг темы «${state.myth}» есть заговор. Кто именно, по-вашему, за этим стоит?»`;
-    pool = narrativePool.culprit;
-    correctIdx = s.cIdx;
-  } else if (s.step === 1) {
-    qText = `«Хорошо, ${state.playerName}, звучит громко. А на какие именно доказательства вы опираетесь в своём расследовании?»`;
-    pool = narrativePool.proof;
-    correctIdx = s.pIdx;
-  } else {
-    qText = `«И последний вопрос, ${state.playerName}: объясните нашим зрителям, зачем вообще кому-то врать об этом?»`;
-    pool = narrativePool.motive;
-    correctIdx = s.mIdx;
-  }
-
-  let wrongIdx = (correctIdx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
-
-  const answers = [
-    { text: `«${pool[correctIdx].match}»`, type: "match" },
-    { text: `«${pool[correctIdx].evade}»`, type: "mid" },
-    { text: `«${pool[wrongIdx].match}»`, type: "contradict" }
-  ].sort(() => Math.random() - 0.5);
-
-  document.getElementById("debate-desc").innerHTML = `<strong>ВОПРОС ${s.step + 1} ИЗ 3:</strong><br>${qText}`;
-  const opts = document.getElementById("debate-options");
-  opts.innerHTML = "";
-
-  answers.forEach(ans => {
-    const btn = document.createElement("button");
-    btn.className = "debate-btn";
-    btn.innerHTML = `<span class="debate-btn-title">${ans.text}</span>`;
-    btn.onclick = () => handleStudioAnswer(ans.type);
-    opts.appendChild(btn);
+  animateSpeaker("host"); playSimlish("host");
+  const pools = [ses.ps.c, ses.ps.p, ses.ps.m], idxs = [ses.ci, ses.pi, ses.mi];
+  const pool = pools[ses.step], ci = idxs[ses.step], wi = (ci + 1 + Math.floor(Math.random()*2)) % 3;
+  const qs = { ru:["Кто за этим стоит?","Какие доказательства?","Зачем им врать?"], en:["Who is behind it?","What is your proof?","Why would they lie?"], es:["¿Quién está detrás?","¿Qué pruebas tienes?","¿Por qué mentirían?"] }[state.lang];
+  document.getElementById("debate-desc").innerHTML = `<strong>${ses.step+1}/3:</strong> ${state.playerName}, ${qs[ses.step]}`;
+  const ans = [{t:pool[ci].m,k:"ok"},{t:pool[ci].e,k:"mid"},{t:pool[wi].m,k:"bad"}].sort(()=>Math.random()-0.5);
+  const opts = document.getElementById("debate-options"); opts.innerHTML = "";
+  ans.forEach(a => {
+    const b = document.createElement("button"); b.className = "debate-btn"; b.innerHTML = `<span class="debate-btn-title">«${a.t}»</span>`;
+    b.onclick = () => {
+      animateSpeaker("player"); playSimlish("player");
+      if (a.k==="ok") { ses.hd += Math.round(8*state.interviewBonus); ses.md += Math.round(60*state.interviewBonus); ses.bd += 1; ses.ok++; }
+      else if (a.k==="mid") { ses.hd += 1; ses.md += 15; }
+      else { ses.hd -= 12; ses.bd -= 1.8; ses.fd += 5; }
+      ses.step++; setTimeout(nextQ, 320);
+    };
+    opts.appendChild(b);
   });
-}
-
-function handleStudioAnswer(type) {
-  animateSpeaker("player");
-  playSimlish("player");
-
-  const s = studioSession;
-  if (type === "match") {
-    s.hypeDelta += Math.round(8 * state.interviewBonus);
-    s.moneyDelta += Math.round(60 * state.interviewBonus);
-    s.belDelta += 1.0;
-    s.matches++;
-  } else if (type === "mid") {
-    s.hypeDelta += 1;
-    s.moneyDelta += 15;
-  } else {
-    s.hypeDelta -= 12;
-    s.belDelta -= 1.8;
-    s.fcDelta += 5;
-    s.contradictions++;
-  }
-
-  s.step++;
-  setTimeout(nextStudioQuestion, 380);
-}
-
-function finishStudioInterview() {
-  document.getElementById("debate-modal").classList.add("hidden");
-  state.paused = false;
-  registerAction();
-  if (musicEnabled) startJazz();
-
-  const s = studioSession;
-  state.hype = Math.max(5, Math.min(100, state.hype + s.hypeDelta));
-  state.money += s.moneyDelta;
-  state.factCheck = Math.min(100, state.factCheck + s.fcDelta * state.defenseFactor);
-
-  regions.forEach(r => {
-    if (r.bel > 0 && !r.bought) {
-      const cap = getRegionCap(r);
-      const nextVal = r.bel + s.belDelta;
-      r.bel = Math.max(0, Math.min(s.belDelta > 0 ? Math.max(cap, r.bel) : 100, nextVal));
-    }
-  });
-
-  if (s.matches === 3) {
-    setTicker(`ИДЕАЛЬНЫЙ ЭФИР (3/3)! ${state.playerName} держался своей легенды (+${s.hypeDelta}% хайпа, +$${s.moneyDelta})!`);
-  } else if (s.contradictions > 0) {
-    setTicker(`ПОЙМАЛИ НА ЛЖИ! Ведущий уличил тебя в противоречиях (${s.hypeDelta}% хайпа, фактчекинг +${Math.round(s.fcDelta * state.defenseFactor)}%)!`);
-  } else {
-    setTicker(`ЭФИР ЗАВЕРШЁН: зрители восприняли интервью спокойно (+${s.hypeDelta}% хайпа, +$${s.moneyDelta}).`);
-  }
-  updateUI();
 }
 
 function animateSpeaker(who) {
-  const p = document.getElementById("char-player");
-  const h = document.getElementById("char-host");
-  p.classList.remove("talking");
-  h.classList.remove("talking");
-  const target = who === "player" ? p : h;
-  target.classList.add("talking");
-  setTimeout(() => target.classList.remove("talking"), 750);
+  const el = document.getElementById(who==="player"?"char-player":"char-host");
+  el.classList.add("talking"); setTimeout(()=>el.classList.remove("talking"), 650);
 }
 
-// --- VIRAL BUBBLES ---
-function spawnViralBubble() {
-  const container = document.getElementById("map-container");
-  const bubble = document.createElement("div");
-  bubble.className = "viral-bubble";
-  const reward = Math.round((20 + Math.random() * 25) * getHypeMultiplier());
-  bubble.textContent = `+$${reward}`;
-  bubble.style.left = (22 + Math.random() * 60) + "%";
-  bubble.style.top = (18 + Math.random() * 55) + "%";
-
-  bubble.onclick = () => {
-    registerAction();
-    state.money += reward;
-    state.hype = Math.min(100, state.hype + 2);
-    bubble.remove();
-    updateUI();
-  };
-
-  container.appendChild(bubble);
-  setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 5000);
-}
-
-// --- MAIN TICK LOOP ---
+// --- LOOP & UI ---
 let tickTimer = null;
-function gameLoop() {
-  if (tickTimer) clearInterval(tickTimer);
-  tickTimer = setInterval(() => {
-    if (!state.running || state.paused) return;
-    tick();
-  }, 1000 / state.speed);
-}
+function gameLoop() { if (tickTimer) clearInterval(tickTimer); tickTimer = setInterval(()=>{ if (state.running && !state.paused) tick(); }, 1000 / state.speed); }
+function getGlobalBel() { let p=0,b=0; regions.forEach(r=>{p+=r.pop; b+=r.pop*(r.bel/100);}); return (b/p)*100; }
 
 function tick() {
-  state.prevStats = {
-    money: state.money,
-    hype: state.hype,
-    virality: state.virality,
-    bel: getGlobalBelieversPct(),
-    fc: state.factCheck
-  };
+  state.prevStats = { money:state.money, hype:state.hype, virality:state.virality, bel:getGlobalBel(), fc:state.factCheck };
+  state.day++; state.daysSinceAction++; if (state.headlineCooldown > 0) state.headlineCooldown--;
+  regions.forEach(r => { if (r.sideFakeCd > 0) r.sideFakeCd--; Object.values(r.upgState).forEach(s => { if (s.cd > 0) s.cd--; }); });
+  state.hype = Math.max(8, state.hype - (state.daysSinceAction > 10 ? 0.55 : 0.24));
+  if (state.daysSinceAction > 16 && state.virality > 5) state.virality = Math.max(5, +(state.virality - 0.25).toFixed(2));
 
-  state.day++;
-  state.daysSinceAction++;
-  if (state.headlineCooldown > 0) state.headlineCooldown--;
-
-  regions.forEach(r => {
-    if (r.sideFakeCd > 0) r.sideFakeCd--;
-    Object.values(r.upgState).forEach(st => {
-      if (st.cd > 0) st.cd--;
-    });
-  });
-
-  // Hype & Virality Decay if inactive
-  const inactivityPenalty = state.daysSinceAction > 10 ? 0.55 : 0.24;
-  state.hype = Math.max(8, state.hype - inactivityPenalty);
-
-  if (state.daysSinceAction > 16 && state.virality > 5) {
-    state.virality = Math.max(5, +(state.virality - 0.25).toFixed(2));
-  }
-
-  let totalDailyIncome = state.passiveIncome * getHypeMultiplier();
-
-  // Spread & Decay per region (With Audience Cap + Education Factor)
+  let inc = state.passiveIncome * getHypeMult();
   regions.forEach(r => {
     if (r.bel > 0 && !r.bought) {
-      let regSpread = 0;
-      regionalUpgradeTemplates.forEach(u => {
-        const lvl = r.upgState[u.id].level;
-        if (lvl > 0) regSpread += u.spreadBonus * lvl;
-      });
-
-      const cap = getRegionCap(r);
-      const eduResistance = Math.max(0.28, 1.32 - (r.education / 100));
-      const baseDecay = 0.06 + (r.education / 1000) + (state.daysSinceAction > 12 ? 0.14 : 0) + (state.hype < 25 ? 0.10 : 0);
-
-      if (regSpread > 0 && state.hype >= 18 && r.bel < cap) {
-        const growth = Math.max(0.05, (r.bel * (100 - r.bel) / 3600)) * regSpread * (0.5 + state.virality / 75) * r.infoSpeed * eduResistance * (state.hype / 55);
-        r.bel = Math.max(0, Math.min(cap, r.bel + growth - baseDecay));
-      } else {
-        if (r.bel > cap || regSpread === 0 || state.hype < 18 || state.daysSinceAction > 12) {
-          r.bel = Math.max(0, r.bel - baseDecay);
-        }
+      let sp = 0; regTemplates.forEach(u => sp += u.spreadBonus * r.upgState[u.id].level);
+      const cap = getRegionCap(r), eduRes = Math.max(0.28, 1.32 - r.education / 100);
+      const dec = 0.06 + r.education/1000 + (state.daysSinceAction>12?0.14:0) + (state.hype<25?0.1:0);
+      if (sp > 0 && state.hype >= 18 && r.bel < cap) {
+        const g = Math.max(0.05, (r.bel*(100-r.bel)/3600)) * sp * (0.5 + state.virality/75) * r.infoSpeed * eduRes * (state.hype/55);
+        r.bel = Math.max(0, Math.min(cap, r.bel + g - dec));
+      } else if (r.bel > cap || sp === 0 || state.hype < 18 || state.daysSinceAction > 12) {
+        r.bel = Math.max(0, r.bel - dec);
       }
     }
-
-    // Cross-border spread
     if (r.bel > 16 && state.hype > 30) {
-      r.links.forEach(link => {
-        const target = regions.find(x => x.id === link.to);
-        if (target.bel === 0) {
-          if (link.ocean && state.virality < state.oceanThreshold) return;
-          const chance = link.ocean ? 0.008 : 0.015;
-          if (Math.random() < chance) {
-            target.bel = 1.0;
-            setTicker(`ПРОРЫВ! В регионе ${target.name} начали обсуждать, что «${state.myth}»!`);
-          }
-        }
+      r.links.forEach(l => {
+        const tg = regions.find(x => x.id === l.to);
+        if (tg.bel === 0 && (!l.ocean || state.virality >= state.oceanThreshold) && Math.random() < (l.ocean?0.008:0.015)) tg.bel = 1.0;
       });
     }
-
-    totalDailyIncome += getRegionDailyIncome(r);
+    inc += getRegIncome(r);
   });
 
-  state.money += Math.floor(totalDailyIncome);
-  document.getElementById("ui-income").textContent = `+$${Math.floor(totalDailyIncome)}/дн`;
+  state.money += Math.floor(inc);
+  document.getElementById("ui-income").textContent = `+$${Math.floor(inc)}${t().perDay}`;
+  const gb = getGlobalBel();
+  if (gb > 2.5) state.factCheck = Math.min(100, state.factCheck + (0.075 + gb/160 + (state.hype/180)*0.12) * state.defenseFactor);
+  if (state.day >= state.nextEventDay && gb > 0.8) { state.nextEventDay = state.day + 38 + Math.floor(Math.random()*18); triggerStudioEvent(); }
+  if (Math.random() < 0.05) spawnBubble();
 
-  const globalPct = getGlobalBelieversPct();
-  if (globalPct > 2.5) {
-    const hypePressure = state.hype / 180;
-    const fcGrowth = (0.075 + (globalPct / 160) + hypePressure * 0.12) * state.defenseFactor;
-    state.factCheck = Math.min(100, state.factCheck + fcGrowth);
-  }
-
-  if (state.day >= state.nextEventDay && globalPct > 0.8) {
-    state.nextEventDay = state.day + 38 + Math.floor(Math.random() * 18);
-    triggerStudioEvent();
-  }
-
-  if (Math.random() < 0.05) spawnViralBubble();
-
-  const boughtCount = regions.filter(r => r.bought).length;
-  if (boughtCount === regions.length) {
-    endGame(true, `Ты захватил инфополе за ${state.day} дней! Все мировые СМИ принадлежат «${state.mediaName}». Теперь «${state.myth}» — официальная истина.`);
-  } else if (state.factCheck >= 100) {
-    endGame(false, `На ${state.day}-й день фактчекеры и учёные полностью разгромили «${state.mediaName}». Аккаунты удалены, инвесторы сбежали.`);
-  }
-
+  const bought = regions.filter(r => r.bought).length;
+  if (bought === regions.length) endGame(true, t().winDesc(state.day, state.mediaName, state.myth));
+  else if (state.factCheck >= 100) endGame(false, t().loseDesc(state.day, state.mediaName));
   updateUI();
 }
 
-function getGlobalBelieversPct() {
-  let totalPop = 0, totalBel = 0;
-  regions.forEach(r => {
-    totalPop += r.pop;
-    totalBel += r.pop * (r.bel / 100);
-  });
-  return (totalBel / totalPop) * 100;
+function spawnBubble() {
+  const b = document.createElement("div"); b.className = "viral-bubble";
+  const rew = Math.round((20 + Math.random()*25) * getHypeMult());
+  b.textContent = `+$${rew}`; b.style.left = (22+Math.random()*60)+"%"; b.style.top = (18+Math.random()*55)+"%";
+  b.onclick = () => { registerAction(); state.money += rew; state.hype = Math.min(100, state.hype+2); b.remove(); updateUI(); };
+  document.getElementById("map-container").appendChild(b);
+  setTimeout(()=>{ if (b.parentNode) b.remove(); }, 5000);
 }
 
-function setTrend(elId, current, prev, invertColor = false) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  const diff = current - prev;
-  if (diff > 0.005) {
-    el.textContent = "▲";
-    el.className = "trend " + (invertColor ? "trend-down" : "trend-up");
-  } else if (diff < -0.005) {
-    el.textContent = "▼";
-    el.className = "trend " + (invertColor ? "trend-up" : "trend-down");
-  } else {
-    el.textContent = "•";
-    el.className = "trend trend-flat";
-  }
+function setTrend(id, cur, prev, inv=false) {
+  const el = document.getElementById(id), d = cur - prev;
+  el.textContent = d > 0.005 ? "▲" : d < -0.005 ? "▼" : "•";
+  el.className = "trend " + (d > 0.005 ? (inv?"trend-down":"trend-up") : d < -0.005 ? (inv?"trend-up":"trend-down") : "trend-flat");
+}
+
+function updateMapVisuals() {
+  const open = state.virality >= state.oceanThreshold;
+  document.querySelectorAll('line[data-ocean="1"]').forEach(l => l.classList.toggle("unlocked", open));
+  const rm = {}; regions.forEach(r => rm[r.id] = r);
+  document.querySelectorAll("path.country-path[data-region]").forEach(p => {
+    const rid = p.getAttribute("data-region"), cn = p.getAttribute("data-country") || "", r = rm[rid];
+    if (r.bought) p.style.fill = "#7c3aed";
+    else if (r.bel > 0) { const k = Math.min(1, r.bel/100); p.style.fill = `rgb(${Math.floor(38+k*202)},${Math.floor(52+(1-k)*18)},${Math.floor(78+(1-k)*22)})`; }
+    else p.style.fill = "#1b263b";
+    p.classList.toggle("in-selected-region", rid === state.selectedRegionId);
+    p.classList.toggle("picked-country", Boolean(state.selectedCountryName && cn === state.selectedCountryName));
+  });
+  regions.forEach(r => { const el = document.getElementById(`pct-${r.id}`); if (el) el.textContent = r.bought ? "100% ★" : `${r.bel.toFixed(0)}%`; });
 }
 
 function updateUI() {
-  const globalPct = getGlobalBelieversPct();
-  const boughtCount = regions.filter(r => r.bought).length;
-
-  document.getElementById("ui-day").textContent = `День ${state.day}`;
+  const d = t(), gb = getGlobalBel();
+  document.getElementById("ui-day").textContent = `${d.dayPrefix} ${state.day}`;
   document.getElementById("ui-money").textContent = `$${state.money}`;
   document.getElementById("ui-hype").textContent = `${Math.floor(state.hype)}%`;
   document.getElementById("bar-hype").style.width = `${state.hype}%`;
-
-  document.getElementById("ui-viral").textContent = `${Math.floor(state.virality)} / ${state.oceanThreshold}`;
-  const oceanUnlocked = state.virality >= state.oceanThreshold;
-  document.getElementById("ui-ocean-status").textContent = oceanUnlocked ? "Океаны открыты!" : "Океаны закрыты";
-  document.getElementById("ui-ocean-status").style.color = oceanUnlocked ? "#ec4899" : "#94a3b8";
-
-  document.querySelectorAll('line[data-ocean="1"]').forEach(l => {
-    l.classList.toggle("unlocked", oceanUnlocked);
-  });
-
-  document.getElementById("ui-believers").textContent = `${globalPct.toFixed(1)}%`;
-  document.getElementById("bar-believers").style.width = `${globalPct}%`;
-  document.getElementById("ui-monopoly").textContent = `${boughtCount} / ${regions.length}`;
+  document.getElementById("ui-viral").textContent = `${Math.floor(state.virality)}/${state.oceanThreshold}`;
+  const open = state.virality >= state.oceanThreshold;
+  document.getElementById("ui-ocean-status").textContent = open ? d.oceanOpen : d.oceanClosed;
+  document.getElementById("ui-believers").textContent = `${gb.toFixed(1)}%`;
+  document.getElementById("bar-believers").style.width = `${gb}%`;
+  document.getElementById("ui-monopoly").textContent = `${regions.filter(r=>r.bought).length}/${regions.length}`;
   document.getElementById("ui-factcheck").textContent = `${Math.floor(state.factCheck)}%`;
   document.getElementById("bar-factcheck").style.width = `${state.factCheck}%`;
-
-  setTrend("tr-money", state.money, state.prevStats.money);
-  setTrend("tr-hype", state.hype, state.prevStats.hype);
-  setTrend("tr-viral", state.virality, state.prevStats.virality);
-  setTrend("tr-bel", globalPct, state.prevStats.bel);
-  setTrend("tr-fc", state.factCheck, state.prevStats.fc, true);
-
-  regions.forEach(r => {
-    const shape = document.getElementById(`shape-${r.id}`);
-    const pctText = document.getElementById(`pct-${r.id}`);
-    if (r.bought) {
-      shape.style.fill = "#7c3aed";
-    } else if (r.bel > 0) {
-      const intensity = Math.min(1, r.bel / 100);
-      const red = Math.floor(30 + intensity * 209);
-      const green = Math.floor(41 + (1 - intensity) * 15);
-      const blue = Math.floor(59 + (1 - intensity) * 20);
-      shape.style.fill = `rgb(${red}, ${green}, ${blue})`;
-    } else {
-      shape.style.fill = "#1e293b";
-    }
-    pctText.textContent = r.bought ? "100% ★" : `${r.bel.toFixed(0)}%`;
-  });
-
-  const hlBtn = document.getElementById("btn-publish-hl");
-  const hlCd = document.getElementById("hl-cooldown-text");
-  if (state.headlineCooldown > 0) {
-    hlBtn.disabled = true;
-    hlCd.textContent = `Следующая сенсация через ${state.headlineCooldown} дн.`;
-  } else {
-    hlBtn.disabled = false;
-    hlCd.textContent = "Готово к публикации!";
-  }
-
-  renderRegionalUpgrades();
-  renderGlobalUpgrades();
-  updateRegionCard();
+  setTrend("tr-money", state.money, state.prevStats.money); setTrend("tr-hype", state.hype, state.prevStats.hype);
+  setTrend("tr-viral", state.virality, state.prevStats.virality); setTrend("tr-bel", gb, state.prevStats.bel); setTrend("tr-fc", state.factCheck, state.prevStats.fc, true);
+  updateMapVisuals();
+  const hb = document.getElementById("btn-publish-hl"), hc = document.getElementById("hl-cooldown-text");
+  hb.disabled = state.headlineCooldown > 0; hc.textContent = state.headlineCooldown > 0 ? d.hlCd(state.headlineCooldown) : d.hlReady;
+  renderRegionalUpgrades(); renderGlobalUpgrades(); updateRegionCard();
 }
 
-function setTicker(text) {
-  document.getElementById("ui-ticker").textContent = text;
-}
+function setTicker(s) { document.getElementById("ui-ticker").textContent = s; }
+function togglePause() { state.paused = !state.paused; const b = document.getElementById("btn-pause"); b.textContent = state.paused?"▶":"⏸"; b.classList.toggle("active", state.paused); }
+function toggleSpeed() { state.speed = state.speed===1?2:1; document.getElementById("btn-speed").textContent = state.speed+"x"; gameLoop(); }
+function endGame(win, desc) { state.running = false; stopAllMusic(); document.getElementById("end-title").textContent = win?t().winTitle:t().loseTitle; document.getElementById("end-desc").textContent = desc; document.getElementById("end-modal").classList.remove("hidden"); }
 
-function togglePause() {
-  state.paused = !state.paused;
-  const btn = document.getElementById("btn-pause");
-  btn.textContent = state.paused ? "▶" : "⏸";
-  btn.classList.toggle("active", state.paused);
-}
-
-function toggleSpeed() {
-  state.speed = state.speed === 1 ? 2 : 1;
-  document.getElementById("btn-speed").textContent = state.speed + "x";
-  gameLoop();
-}
-
-function endGame(win, desc) {
-  state.running = false;
-  stopAllMusic();
-  const modal = document.getElementById("end-modal");
-  const title = document.getElementById("end-title");
-  title.textContent = win ? "ИНФОРМАЦИОННАЯ СИНГУЛЯРНОСТЬ!" : "РАССЛЕДОВАНИЕ ЗАВЕРШЕНО";
-  title.style.color = win ? "var(--accent-purple)" : "var(--accent-blue)";
-  document.getElementById("end-desc").textContent = desc;
-  modal.classList.remove("hidden");
-}
-
-// --- AUDIO ENGINE: JAZZ + MORNING SHOW + TENSE DEBATE + SIMLISH ---
-let audioCtx = null;
-let musicInterval = null;
-let musicEnabled = true;
-let musicStep = 0;
-
+// --- AUDIO ENGINE (JAZZ + PHONK + STUDIO + SIMLISH) ---
+let audioCtx = null, musicInterval = null, musicEnabled = true, musicStep = 0;
 function ensureAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === "suspended") audioCtx.resume();
 }
+function stopAllMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } }
 
-function stopAllMusic() {
-  if (musicInterval) {
-    clearInterval(musicInterval);
-    musicInterval = null;
-  }
+const jCh = [{b:[73.4,87.3,110,98],k:[293.7,349.2,440,523.3]},{b:[98,110,123.5,116.5],k:[246.9,329.6,349.2,440]},{b:[65.4,82.4,98,123.5],k:[261.6,329.6,392,493.9]},{b:[110,98,87.3,82.4],k:[220,277.2,349.2,392]}];
+const mCh = [{b:[130.8,164.8,196,164.8],k:[523.3,659.3,784]},{b:[174.6,220,261.6,220],k:[523.3,698.5,880]},{b:[196,246.9,293.7,246.9],k:[587.3,784,987.8]},{b:[130.8,196,261.6,196],k:[523.3,659.3,784]}];
+const dCh = [{b:[73.4,73.4,87.3,73.4],k:[293.7,349.2,440]},{b:[58.3,58.3,73.4,58.3],k:[233.1,293.7,349.2]},{b:[65.4,65.4,77.8,65.4],k:[261.6,311.1,392]},{b:[55,55,69.3,55],k:[220,277.2,329.6]}];
+
+const phonkCowbell = [587.3, 0, 587.3, 698.5, 0, 622.3, 587.3, 0, 523.3, 0, 587.3, 0, 698.5, 622.3, 587.3, 523.3];
+const phonkBass    = [55, 0, 0, 55, 0, 0, 65.4, 0, 55, 0, 0, 49, 0, 55, 0, 0];
+
+function playTone(f, type, time, dur, vol, ff=1200) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain(), fl = audioCtx.createBiquadFilter();
+  o.type = type; o.frequency.setValueAtTime(f, time); fl.type = "lowpass"; fl.frequency.setValueAtTime(ff, time);
+  g.gain.setValueAtTime(0.0001, time); g.gain.linearRampToValueAtTime(vol, time + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+  o.connect(fl); fl.connect(g); g.connect(audioCtx.destination); o.start(time); o.stop(time + dur + 0.05);
 }
 
-const jazzChords = [
-  { bass: [73.42, 87.31, 110.00, 98.00], keys: [293.66, 349.23, 440.00, 523.25, 659.25] },
-  { bass: [98.00, 110.00, 123.47, 116.54], keys: [246.94, 329.63, 349.23, 440.00, 587.33] },
-  { bass: [65.41, 82.41, 98.00, 123.47], keys: [261.63, 329.63, 392.00, 493.88, 587.33] },
-  { bass: [110.00, 98.00, 87.31, 82.41], keys: [220.00, 277.18, 349.23, 392.00, 466.16] }
-];
-
-const morningChords = [
-  { bass: [130.81, 164.81, 196.00, 164.81], keys: [523.25, 659.25, 783.99] },
-  { bass: [174.61, 220.00, 261.63, 220.00], keys: [523.25, 698.46, 880.00] },
-  { bass: [196.00, 246.94, 293.66, 246.94], keys: [587.33, 783.99, 987.77] },
-  { bass: [130.81, 196.00, 261.63, 196.00], keys: [523.25, 659.25, 783.99] }
-];
-
-const debateChords = [
-  { bass: [73.42, 73.42, 87.31, 73.42], keys: [293.66, 349.23, 440.00] }, // Dm
-  { bass: [58.27, 58.27, 73.42, 58.27], keys: [233.08, 293.66, 349.23] }, // Bb
-  { bass: [65.41, 65.41, 77.78, 65.41], keys: [261.63, 311.13, 392.00] }, // Cm
-  { bass: [55.00, 55.00, 69.30, 55.00], keys: [220.00, 277.18, 329.63] }  // A
-];
-
-function playTone(freq, type, time, duration, vol, filterFreq = 1200) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  const filter = audioCtx.createBiquadFilter();
-
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, time);
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(filterFreq, time);
-
-  gain.gain.setValueAtTime(0.0001, time);
-  gain.gain.linearRampToValueAtTime(vol, time + 0.03);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(time);
-  osc.stop(time + duration + 0.05);
+function playNoise(time, dur, vol, hpFreq) {
+  const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource(), fl = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+  src.buffer = buf; fl.type = "highpass"; fl.frequency.setValueAtTime(hpFreq, time);
+  g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+  src.connect(fl); fl.connect(g); g.connect(audioCtx.destination); src.start(time);
 }
 
-function playBrushHat(time, volume = 0.015) {
-  const bufferSize = audioCtx.sampleRate * 0.05;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-  const noise = audioCtx.createBufferSource();
-  noise.buffer = buffer;
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = "highpass";
-  filter.frequency.value = 6500;
-
-  const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(volume, time);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
-
-  noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(audioCtx.destination);
-  noise.start(time);
+function play808Kick(freq, time) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain(), fl = audioCtx.createBiquadFilter();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(freq * 2.4, time); o.frequency.exponentialRampToValueAtTime(freq, time + 0.07);
+  fl.type = "lowpass"; fl.frequency.setValueAtTime(240, time);
+  g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(0.14, time + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.34);
+  o.connect(fl); fl.connect(g); g.connect(audioCtx.destination); o.start(time); o.stop(time + 0.36);
 }
 
-function startJazz() {
-  state.audioMode = "jazz";
-  if (!musicEnabled) return;
-  ensureAudio();
-  stopAllMusic();
+function playCowbell(freq, time) {
+  const fl = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+  fl.type = "bandpass"; fl.frequency.setValueAtTime(freq * 1.4, time); fl.Q.value = 3.2;
+  g.gain.setValueAtTime(0.001, time); g.gain.linearRampToValueAtTime(0.055, time + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+  fl.connect(g); g.connect(audioCtx.destination);
+  [1, 1.48].forEach(ratio => {
+    const o = audioCtx.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(freq * ratio, time);
+    o.connect(fl); o.start(time); o.stop(time + 0.17);
+  });
+}
 
-  const beatMs = 680;
-  musicInterval = setInterval(() => {
+function startPhonk() {
+  state.audioMode = "phonk"; if (!musicEnabled) return; ensureAudio(); stopAllMusic();
+  const playStep = () => {
     if (!musicEnabled || !audioCtx) return;
-    const now = audioCtx.currentTime;
-    const bar = Math.floor(musicStep / 4) % jazzChords.length;
-    const beat = musicStep % 4;
-    const chord = jazzChords[bar];
-
-    playTone(chord.bass[beat], "sine", now, 0.55, 0.08, 600);
-    if (beat === 0) chord.keys.forEach((f, i) => playTone(f, "triangle", now + i * 0.03, 1.6, 0.02, 950));
-    if (beat === 2 && Math.random() < 0.6) chord.keys.forEach((f, i) => playTone(f, "triangle", now + 0.2 + i * 0.03, 1.0, 0.018, 950));
-
-    playBrushHat(now, beat % 2 === 1 ? 0.02 : 0.01);
+    const now = audioCtx.currentTime, step = musicStep % 16;
+    if (phonkBass[step]) play808Kick(phonkBass[step], now);
+    if (phonkCowbell[step]) playCowbell(phonkCowbell[step], now);
+    if (step % 2 === 0 || step === 15) playNoise(now, 0.04, step % 4 === 0 ? 0.025 : 0.015, 7500);
+    if (step === 4 || step === 12) playNoise(now, 0.12, 0.05, 1600);
     musicStep++;
-  }, beatMs);
+  };
+  playStep();
+  musicInterval = setInterval(playStep, 115);
 }
 
-function startMorningShowMusic() {
-  state.audioMode = "morning";
-  if (!musicEnabled) return;
-  ensureAudio();
-  stopAllMusic();
-
-  const beatMs = 460;
-  musicInterval = setInterval(() => {
+function startTrack(mode, chords, ms, bassType) {
+  state.audioMode = mode; if (!musicEnabled) return; ensureAudio(); stopAllMusic();
+  const playBeat = () => {
     if (!musicEnabled || !audioCtx) return;
-    const now = audioCtx.currentTime;
-    const bar = Math.floor(musicStep / 4) % morningChords.length;
-    const beat = musicStep % 4;
-    const chord = morningChords[bar];
-
-    playTone(chord.bass[beat], "triangle", now, 0.25, 0.07, 900);
-    if (beat === 0 || beat === 2) {
-      chord.keys.forEach(f => playTone(f, "sine", now, 0.3, 0.024, 2200));
-    }
-    if (beat === 1 || beat === 3) {
-      playBrushHat(now, 0.022);
-    }
+    const now = audioCtx.currentTime, c = chords[Math.floor(musicStep/4) % chords.length], bt = musicStep % 4;
+    playTone(c.b[bt], bassType, now, ms/1200, 0.075, 650);
+    if (bt === 0 || (mode==="morning" && bt===2)) c.k.forEach((f,i) => playTone(f, mode==="morning"?"sine":"triangle", now + i*0.025, ms/500, 0.022, 1400));
     musicStep++;
-  }, beatMs);
+  };
+  playBeat();
+  musicInterval = setInterval(playBeat, ms);
 }
 
-function startDebateMusic() {
-  state.audioMode = "debate";
-  if (!musicEnabled) return;
-  ensureAudio();
-  stopAllMusic();
+const startJazz = () => {
+  if (state.musicGenre === "phonk") { startPhonk(); return; }
+  startTrack("jazz", jCh, 660, "sine");
+};
+const startMorningShowMusic = () => startTrack("morning", mCh, 440, "triangle");
+const startDebateMusic = () => startTrack("debate", dCh, 500, "sawtooth");
 
-  const beatMs = 520;
-  musicInterval = setInterval(() => {
-    if (!musicEnabled || !audioCtx) return;
-    const now = audioCtx.currentTime;
-    const bar = Math.floor(musicStep / 4) % debateChords.length;
-    const beat = musicStep % 4;
-    const chord = debateChords[bar];
-
-    playTone(chord.bass[beat], "sawtooth", now, 0.22, 0.04, 320);
-    if (beat === 0) {
-      chord.keys.forEach(f => playTone(f, "triangle", now, 0.9, 0.022, 750));
-    }
-    playBrushHat(now, beat === 0 ? 0.025 : 0.01);
-    musicStep++;
-  }, beatMs);
+function toggleGenre() {
+  state.musicGenre = state.musicGenre === "jazz" ? "phonk" : "jazz";
+  const btn = document.getElementById("btn-genre");
+  btn.textContent = state.musicGenre === "phonk" ? "🔥" : "🎷";
+  btn.classList.toggle("active", state.musicGenre === "phonk");
+  if (musicEnabled && (state.audioMode === "jazz" || state.audioMode === "phonk")) startJazz();
 }
 
-function playSimlish(speaker = "host") {
-  if (!musicEnabled) return;
-  ensureAudio();
-
-  const now = audioCtx.currentTime;
-  const syllables = 4 + Math.floor(Math.random() * 3);
-  const basePitch = speaker === "host" ? 210 : 155;
-  const vowels = [450, 700, 1100, 1500, 1900];
-
-  for (let i = 0; i < syllables; i++) {
-    const start = now + i * 0.11;
-    const dur = 0.08 + Math.random() * 0.04;
-    const pitch = basePitch + (Math.random() - 0.5) * 65;
-
-    const osc = audioCtx.createOscillator();
-    const filter = audioCtx.createBiquadFilter();
-    const gain = audioCtx.createGain();
-
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(pitch, start);
-    osc.frequency.exponentialRampToValueAtTime(pitch * (0.85 + Math.random() * 0.3), start + dur);
-
-    filter.type = "bandpass";
-    filter.frequency.setValueAtTime(vowels[Math.floor(Math.random() * vowels.length)], start);
-    filter.Q.value = 3.5;
-
-    gain.gain.setValueAtTime(0.001, start);
-    gain.gain.linearRampToValueAtTime(0.06, start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(start);
-    osc.stop(start + dur + 0.02);
+function playSimlish(who="host") {
+  if (!musicEnabled) return; ensureAudio();
+  const now = audioCtx.currentTime, bp = who==="host"?210:155, vw = [450,700,1100,1500,1900];
+  for (let i=0; i<5; i++) {
+    const s = now + i*0.11, o = audioCtx.createOscillator(), f = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(bp + (Math.random()-0.5)*60, s);
+    f.type = "bandpass"; f.frequency.setValueAtTime(vw[Math.floor(Math.random()*vw.length)], s); f.Q.value = 3.5;
+    g.gain.setValueAtTime(0.001, s); g.gain.linearRampToValueAtTime(0.055, s+0.02); g.gain.exponentialRampToValueAtTime(0.001, s+0.09);
+    o.connect(f); f.connect(g); g.connect(audioCtx.destination); o.start(s); o.stop(s+0.1);
   }
 }
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
-  const btn = document.getElementById("btn-music");
-  btn.textContent = musicEnabled ? "🎵" : "🔇";
-  btn.classList.toggle("active", musicEnabled);
+  const b = document.getElementById("btn-music"); b.textContent = musicEnabled?"🎵":"🔇"; b.classList.toggle("active", musicEnabled);
   if (musicEnabled) {
-    if (state.audioMode === "morning") startMorningShowMusic();
-    else if (state.audioMode === "debate") startDebateMusic();
+    if (state.audioMode==="morning") startMorningShowMusic();
+    else if (state.audioMode==="debate") startDebateMusic();
     else startJazz();
-  } else {
-    stopAllMusic();
-  }
+  } else stopAllMusic();
 }
+
+document.getElementById("input-myth").addEventListener("input", () => { state.customMyth = true; });
+applyStatic();
 </script>
 </body>
 </html>
