@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Lie Broadcast — Fake It Till You Take It</title>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -13,15 +13,15 @@
     --red: #ef4444; --green: #10b981; --amber: #f59e0b; --blue: #3b82f6; --purple: #8b5cf6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+  body { background: var(--bg-dark); color: var(--text-main); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
 
   header { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 10; }
-  .brand-info { display: flex; flex-direction: column; min-width: 150px; max-width: 205px; }
+  .brand-info { display: flex; flex-direction: column; min-width: 140px; max-width: 205px; }
   .brand-name { font-weight: 800; font-size: 0.98rem; color: var(--red); text-transform: uppercase; }
   .brand-myth { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .stats-bar { display: flex; gap: 14px; align-items: center; flex: 1; justify-content: center; flex-wrap: wrap; }
-  .stat-item { display: flex; flex-direction: column; min-width: 88px; }
+  .stat-item { display: flex; flex-direction: column; min-width: 82px; }
   .stat-label { font-size: 0.62rem; text-transform: uppercase; color: var(--text-muted); }
   .stat-value { font-size: 0.96rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
   .stat-sub { font-size: 0.65rem; color: var(--text-muted); }
@@ -35,7 +35,7 @@
   .lang-switch { display: flex; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
   .lang-btn { background: transparent; color: var(--text-muted); border: none; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
   .lang-btn.active { background: var(--amber); color: #090d16; }
-  .day-badge { background: var(--bg-card); padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid var(--border); min-width: 72px; text-align: center; }
+  .day-badge { background: var(--bg-card); padding: 5px 9px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid var(--border); min-width: 68px; text-align: center; }
   .btn-icon { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); padding: 5px 9px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
   .btn-icon.active { background: var(--red); border-color: var(--red); }
 
@@ -43,7 +43,7 @@
   .ticker-badge { background: var(--red); color: #fff; font-weight: 800; font-size: 0.68rem; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
   .ticker-text { color: #fecaca; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  main { display: flex; flex: 1; overflow: hidden; }
+  main { display: flex; flex: 1; overflow: hidden; position: relative; }
   .map-container { flex: 1; position: relative; background: radial-gradient(circle at 50% 45%, #122038 0%, #070b14 100%); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   svg#world-map { width: 100%; height: 100%; }
   .graticule-line { stroke: #1e293b; stroke-width: 0.6; fill: none; opacity: 0.45; }
@@ -74,7 +74,7 @@
   .monopoly-badge { background: var(--purple); color: #fff; font-size: 0.58rem; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; }
 
   aside { width: 390px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
-  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); align-items: center; }
   .tab-btn { flex: 1; padding: 11px 5px; background: transparent; border: none; color: var(--text-muted); font-weight: 700; font-size: 0.75rem; cursor: pointer; border-bottom: 2px solid transparent; }
   .tab-btn.active { color: var(--red); border-bottom-color: var(--red); background: rgba(239,68,68,0.06); }
   .tab-content { flex: 1; overflow-y: auto; padding: 12px 14px; display: none; flex-direction: column; gap: 10px; }
@@ -96,16 +96,19 @@
   .select-group { display: flex; flex-direction: column; gap: 4px; }
   .select-group label { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
   select, .input-field { background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; font-size: 0.84rem; outline: none; width: 100%; }
+  .input-field.input-error { border-color: var(--red); box-shadow: 0 0 0 2px rgba(239,68,68,0.35); }
+  .error-hint { font-size: 0.72rem; color: var(--red); font-weight: 600; display: none; }
+  .error-hint.show { display: block; }
   .btn-publish { padding: 11px; background: var(--amber); color: #000; font-weight: 800; border: none; border-radius: 8px; cursor: pointer; font-size: 0.86rem; text-transform: uppercase; }
   .btn-publish:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(5,8,15,0.94); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; width: 92%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; max-height: 96vh; overflow-y: auto; }
+  .modal { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; width: 92%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; max-height: 94vh; overflow-y: auto; }
   .modal-top-row { display: flex; justify-content: space-between; align-items: center; }
   .start-logo-container { width: 100%; display: flex; justify-content: center; }
-  .start-logo-img { width: 165px; height: 165px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-  .modal h1 { font-size: 1.4rem; color: var(--red); text-align: center; letter-spacing: 1px; }
-  .modal-slogan { text-align: center; color: var(--amber); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-top: -6px; }
+  .start-logo-img { width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+  .modal h1 { font-size: 1.35rem; color: var(--red); text-align: center; letter-spacing: 1px; }
+  .modal-slogan { text-align: center; color: var(--amber); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; margin-top: -6px; }
   .modal p { font-size: 0.82rem; color: var(--text-muted); text-align: center; line-height: 1.4; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; max-height: 112px; overflow-y: auto; padding-right: 4px; }
   .preset-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 20px; font-size: 0.74rem; cursor: pointer; }
@@ -114,7 +117,7 @@
 
   .studio-modal { max-width: 680px; padding: 0; overflow: hidden; border: 2px solid var(--amber); }
   .studio-modal.mode-debate { border-color: var(--red); }
-  .studio-stage { position: relative; height: 220px; overflow: hidden; border-bottom: 3px solid #1e293b; }
+  .studio-stage { position: relative; height: 210px; overflow: hidden; border-bottom: 3px solid #1e293b; }
   .studio-stage.theme-morning { background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 42%, #f59e0b 86%, #ea580c 100%); }
   .studio-stage.theme-debate { background: radial-gradient(circle at 20% 25%, rgba(239,68,68,0.45), transparent 55%), radial-gradient(circle at 80% 25%, rgba(59,130,246,0.45), transparent 55%), linear-gradient(180deg, #090d16 0%, #1e1b4b 100%); }
   .studio-city { position: absolute; bottom: 45px; left: 0; right: 0; height: 90px; opacity: 0.24; background: repeating-linear-gradient(90deg, #0f172a 0 28px, transparent 28px 42px, #0f172a 42px 64px, transparent 64px 72px); }
@@ -126,20 +129,86 @@
   .studio-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
   .talking { animation: talkBob 0.2s ease-in-out infinite alternate; }
   @keyframes talkBob { from{transform:translateY(0)} to{transform:translateY(-4px)} }
-  .studio-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 11px; }
-  .studio-dialogue { background: #0f172a; border-left: 4px solid var(--amber); padding: 11px 14px; border-radius: 6px; font-size: 0.87rem; line-height: 1.45; }
+  .studio-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .studio-dialogue { background: #0f172a; border-left: 4px solid var(--amber); padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; line-height: 1.4; }
   .studio-dialogue strong { color: var(--amber); }
-  .debate-options { display: flex; flex-direction: column; gap: 8px; }
-  .debate-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 10px 13px; border-radius: 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+  .debate-options { display: flex; flex-direction: column; gap: 7px; }
+  .debate-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 9px 12px; border-radius: 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
   .debate-btn:hover:not(:disabled) { border-color: var(--amber); background: #232f47; }
   .debate-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .debate-btn-title { font-weight: 700; font-size: 0.84rem; }
-  .debate-btn-sub { font-size: 0.72rem; color: var(--text-muted); }
+  .debate-btn-title { font-weight: 700; font-size: 0.82rem; }
   .debate-btn.decline { border-color: #7f1d1d; background: rgba(127,29,29,0.2); }
+
+  /* Mobile UI elements (hidden on desktop) */
+  .mobile-only { display: none !important; }
+  #btn-mobile-menu {
+    position: absolute; bottom: 12px; right: 12px; z-index: 25;
+    background: linear-gradient(135deg, var(--red), #b91c1c); color: #fff;
+    border: 2px solid #fca5a5; border-radius: 30px; padding: 10px 16px;
+    font-weight: 800; font-size: 0.82rem; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(239,68,68,0.55);
+  }
+  #btn-close-aside {
+    background: #1e293b; color: #f8fafc; border: none; border-left: 1px solid var(--border);
+    padding: 10px 14px; font-weight: 900; font-size: 0.9rem; cursor: pointer;
+  }
+  #rotate-overlay {
+    position: fixed; inset: 0; background: #070b14; z-index: 9999;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; gap: 14px;
+  }
+  .rotate-icon { font-size: 3.2rem; animation: rotPhone 1.8s ease-in-out infinite; }
+  @keyframes rotPhone { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
+  .settings-grid { display: flex; flex-direction: column; gap: 10px; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.84rem; font-weight: 600; }
+
   .hidden { display: none !important; }
+
+  /* Portrait phone lock */
+  @media (max-width: 768px) and (orientation: portrait) {
+    #rotate-overlay { display: flex !important; }
+  }
+
+  /* Mobile Landscape / Compact screens */
+  @media (max-width: 950px), (max-height: 540px) {
+    .mobile-only { display: inline-flex !important; align-items: center; justify-content: center; }
+    .desktop-only { display: none !important; }
+    header { padding: 4px 10px; gap: 8px; }
+    .brand-info { display: none; }
+    .stats-bar { gap: 8px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+    .stat-item { min-width: auto; }
+    .stat-label, .stat-sub, .progress-mini { display: none; }
+    .stat-value { font-size: 0.82rem; white-space: nowrap; }
+    .day-badge { padding: 3px 7px; font-size: 0.72rem; min-width: 54px; }
+    .ticker-wrap { padding: 3px 10px; font-size: 0.72rem; }
+    .map-legend { display: none; }
+    .region-card { width: 196px; padding: 7px 9px; bottom: 8px; left: 8px; }
+    .region-card h3 { font-size: 0.78rem; }
+    .region-sub-country { font-size: 0.64rem; margin-bottom: 3px; }
+    .region-stat { font-size: 0.65rem; margin-bottom: 1px; }
+    .rc-actions { margin-top: 5px; gap: 4px; }
+    .btn-action { padding: 5px; font-size: 0.66rem; }
+
+    aside {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 340px; max-width: 88vw;
+      z-index: 60; box-shadow: -8px 0 30px rgba(0,0,0,0.8);
+      transform: translateX(100%); transition: transform 0.25s ease;
+    }
+    aside.open { transform: translateX(0); }
+    .start-logo-img { width: 92px; height: 92px; }
+    .modal { padding: 12px 16px; gap: 7px; }
+    .studio-stage { height: 150px; }
+    .studio-body { padding: 10px 14px; gap: 7px; }
+  }
 </style>
 </head>
 <body>
+
+<div id="rotate-overlay">
+  <div class="rotate-icon">📱</div>
+  <h2 id="rotate-title" style="color:var(--amber);font-size:1.2rem;">Поверните телефон горизонтально</h2>
+  <p id="rotate-desc" style="color:var(--text-muted);font-size:0.86rem;max-width:280px;">Карта мира и студия работают в альбомном режиме.</p>
+</div>
 
 <div class="modal-overlay" id="start-modal">
   <div class="modal">
@@ -162,11 +231,12 @@
 
     <div class="select-group">
       <label id="lbl-player"></label>
-      <input type="text" id="input-player" class="input-field" value="Вячеслав" maxlength="20">
+      <input type="text" id="input-player" class="input-field" value="" placeholder="Введите имя" maxlength="20" required>
+      <span class="error-hint" id="player-error">Введите имя, чтобы начать эфир</span>
     </div>
     <div class="select-group">
       <label id="lbl-media"></label>
-      <input type="text" id="input-media" class="input-field" value="Правда-Матка ТВ" maxlength="25">
+      <input type="text" id="input-media" class="input-field" value="Правда 24" maxlength="25">
     </div>
     <div class="select-group">
       <label id="lbl-myth"></label>
@@ -174,6 +244,41 @@
     </div>
     <div class="presets" id="presets-container"></div>
     <button class="btn-start" id="btn-start-game" onclick="startGame()"></button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-top-row">
+      <h2 id="settings-title" style="font-size:1.05rem;color:var(--amber);">⚙️ Настройки</h2>
+      <button class="btn-icon" onclick="toggleSettingsModal(false)">✕</button>
+    </div>
+    <div class="settings-grid">
+      <div class="settings-row">
+        <span id="set-lbl-lang">Язык</span>
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+          <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+          <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span id="set-lbl-music">Музыка</span>
+        <button class="btn-icon active" id="m-btn-music" onclick="toggleMusic()">🎵</button>
+      </div>
+      <div class="settings-row">
+        <span id="set-lbl-genre">Стиль (Джаз / Фонк)</span>
+        <button class="btn-icon" id="m-btn-genre" onclick="toggleGenre()">🎷</button>
+      </div>
+      <div class="settings-row">
+        <span id="set-lbl-pause">Пауза</span>
+        <button class="btn-icon" id="m-btn-pause" onclick="togglePause()">⏸</button>
+      </div>
+      <div class="settings-row">
+        <span id="set-lbl-speed">Скорость</span>
+        <button class="btn-icon" id="m-btn-speed" onclick="toggleSpeed()">1x</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -241,24 +346,25 @@
     <div class="brand-myth" id="ui-myth-text"></div>
   </div>
   <div class="stats-bar">
-    <div class="stat-item"><span class="stat-label" id="lbl-money"></span><span class="stat-value val-money"><span id="ui-money">$150</span><span class="trend" id="tr-money"></span></span><span class="stat-sub" id="ui-income">+$0</span></div>
-    <div class="stat-item"><span class="stat-label" id="lbl-hype"></span><span class="stat-value val-hype"><span id="ui-hype">45%</span><span class="trend" id="tr-hype"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-hype" style="width:45%;background:var(--amber)"></div></div></div>
-    <div class="stat-item"><span class="stat-label" id="lbl-viral"></span><span class="stat-value val-viral"><span id="ui-viral">10/45</span><span class="trend" id="tr-viral"></span></span><span class="stat-sub" id="ui-ocean-status"></span></div>
-    <div class="stat-item"><span class="stat-label" id="lbl-believers"></span><span class="stat-value val-bel"><span id="ui-believers">0.0%</span><span class="trend" id="tr-bel"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-believers" style="width:0%;background:var(--red)"></div></div></div>
-    <div class="stat-item"><span class="stat-label" id="lbl-monopoly"></span><span class="stat-value" style="color:var(--purple)" id="ui-monopoly">0/8</span></div>
-    <div class="stat-item"><span class="stat-label" id="lbl-fc"></span><span class="stat-value val-fc"><span id="ui-factcheck">0%</span><span class="trend" id="tr-fc"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-factcheck" style="width:0%;background:var(--blue)"></div></div></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-money"></span><span class="stat-value val-money"><span>💰</span><span id="ui-money">$150</span><span class="trend" id="tr-money"></span></span><span class="stat-sub" id="ui-income">+$0</span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-hype"></span><span class="stat-value val-hype"><span>🔥</span><span id="ui-hype">45%</span><span class="trend" id="tr-hype"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-hype" style="width:45%;background:var(--amber)"></div></div></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-viral"></span><span class="stat-value val-viral"><span>📡</span><span id="ui-viral">10/45</span><span class="trend" id="tr-viral"></span></span><span class="stat-sub" id="ui-ocean-status"></span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-believers"></span><span class="stat-value val-bel"><span>🔴</span><span id="ui-believers">0.0%</span><span class="trend" id="tr-bel"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-believers" style="width:0%;background:var(--red)"></div></div></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-monopoly"></span><span class="stat-value" style="color:var(--purple)"><span>★</span><span id="ui-monopoly">0/8</span></span></div>
+    <div class="stat-item"><span class="stat-label" id="lbl-fc"></span><span class="stat-value val-fc"><span>🛡</span><span id="ui-factcheck">0%</span><span class="trend" id="tr-fc"></span></span><div class="progress-mini"><div class="progress-fill" id="bar-factcheck" style="width:0%;background:var(--blue)"></div></div></div>
   </div>
   <div class="controls">
-    <div class="lang-switch">
+    <div class="lang-switch desktop-only">
       <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
       <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
     </div>
     <div class="day-badge" id="ui-day">1</div>
-    <button class="btn-icon active" id="btn-music" onclick="toggleMusic()">🎵</button>
-    <button class="btn-icon" id="btn-genre" onclick="toggleGenre()" title="Jazz / Phonk">🎷</button>
-    <button class="btn-icon" id="btn-pause" onclick="togglePause()">⏸</button>
-    <button class="btn-icon" id="btn-speed" onclick="toggleSpeed()">1x</button>
+    <button class="btn-icon active desktop-only" id="btn-music" onclick="toggleMusic()">🎵</button>
+    <button class="btn-icon desktop-only" id="btn-genre" onclick="toggleGenre()" title="Jazz / Phonk">🎷</button>
+    <button class="btn-icon desktop-only" id="btn-pause" onclick="togglePause()">⏸</button>
+    <button class="btn-icon desktop-only" id="btn-speed" onclick="toggleSpeed()">1x</button>
+    <button class="btn-icon mobile-only" id="btn-mobile-settings" onclick="toggleSettingsModal(true)">⚙️</button>
   </div>
 </header>
 
@@ -293,14 +399,16 @@
         <button class="btn-action btn-buyout" id="rc-buyout" onclick="buyoutRegion()"></button>
       </div>
     </div>
+    <button class="mobile-only" id="btn-mobile-menu" onclick="toggleMobileAside(true)">⚡ Управление</button>
   </div>
 
-  <aside>
+  <aside id="side-panel">
     <div class="tabs">
       <button class="tab-btn active" id="tab-btn-upgrades" onclick="switchTab('upgrades', this)"></button>
       <button class="tab-btn" id="tab-btn-global" onclick="switchTab('global', this)"></button>
       <button class="tab-btn" id="tab-btn-headlines" onclick="switchTab('headlines', this)"></button>
       <button class="tab-btn" id="tab-btn-money" onclick="switchTab('money', this)"></button>
+      <button class="mobile-only" id="btn-close-aside" onclick="toggleMobileAside(false)">✕</button>
     </div>
     <div class="tab-content active" id="tab-upgrades">
       <div class="region-banner"><span><span id="upg-lbl-selected"></span> <strong id="upg-reg-name"></strong></span><span><span id="upg-lbl-prices"></span> <strong id="upg-reg-mult"></strong></span></div>
@@ -329,11 +437,16 @@
 <script>
 const I18N = {
   ru: {
+    rotateTitle: "Поверните телефон горизонтально", rotateDesc: "Карта мира и студия работают в альбомном режиме.",
+    mobileMenuBtn: "⚡ Управление", settingsTitle: "⚙️ Настройки",
+    setLang: "Язык", setMusic: "Музыка", setGenre: "Стиль (Джаз / Фонк)", setPause: "Пауза", setSpeed: "Скорость",
     startSubtitle: "Симулятор Медиаимперии", startDesc: "Докажи всем свою правду. Борись с высоким Образованием, пробивай потолки каналов, уворачивайся от фактчекинга и дебатируй с учёными.",
-    lblPlayer: "Твоё имя:", lblMedia: "Название канала:", lblMyth: "Главный миф:", btnStart: "Запустить вещание",
-    defaultPlayer: "Вячеслав", defaultMedia: "Правда-Матка ТВ",
+    lblPlayer: "Твоё имя:", playerPlaceholder: "Введите имя", playerError: "Введите имя, чтобы начать эфир",
+    lblMedia: "Название канала:", lblMyth: "Главный миф:", btnStart: "Запустить вещание",
+    defaultMedia: "Правда 24",
     presets: [
       { label: "🌍 Земля плоская", myth: "Земля на самом деле плоская" },
+      { label: "💪 В чём сила?", myth: "В чём сила?" },
       { label: "🐦 Голуби — дроны", myth: "Голуби — это дроны правительства" },
       { label: "🌙 Луна — голограмма", myth: "Луна — это голограмма" },
       { label: "🐱 Коты правят биржей", myth: "Коты управляют мировой биржей" },
@@ -426,11 +539,16 @@ const I18N = {
     loseDesc: (d,m) => `На ${d}-й день фактчекеры закрыли «${m}».`
   },
   en: {
+    rotateTitle: "Rotate your phone horizontally", rotateDesc: "The world map and studio work best in landscape mode.",
+    mobileMenuBtn: "⚡ Controls", settingsTitle: "⚙️ Settings",
+    setLang: "Language", setMusic: "Music", setGenre: "Genre (Jazz / Phonk)", setPause: "Pause", setSpeed: "Speed",
     startSubtitle: "Media Empire Simulator", startDesc: "Prove your truth. Overcome high Education, break channel reach caps, dodge fact-checkers, and debate scientists live.",
-    lblPlayer: "Your name:", lblMedia: "Network name:", lblMyth: "Core myth:", btnStart: "Start Broadcast",
-    defaultPlayer: "Slava", defaultMedia: "Truth-ish TV",
+    lblPlayer: "Your name:", playerPlaceholder: "Enter your name", playerError: "Enter your name to go live",
+    lblMedia: "Network name:", lblMyth: "Core myth:", btnStart: "Start Broadcast",
+    defaultMedia: "Truth 24",
     presets: [
       { label: "🌍 Flat Earth", myth: "The Earth is actually flat" },
+      { label: "💪 What is true power?", myth: "What is true power?" },
       { label: "🐦 Birds are drones", myth: "Pigeons are government drones" },
       { label: "🌙 Moon hologram", myth: "The Moon is a projection" },
       { label: "🐱 Cats run markets", myth: "Cats secretly control stock markets" },
@@ -523,11 +641,16 @@ const I18N = {
     loseDesc: (d,m) => `On day ${d}, fact-checkers shut down '${m}'.`
   },
   es: {
+    rotateTitle: "Gira el teléfono en horizontal", rotateDesc: "El mapa mundial y el estudio funcionan en modo horizontal.",
+    mobileMenuBtn: "⚡ Gestión", settingsTitle: "⚙️ Ajustes",
+    setLang: "Idioma", setMusic: "Música", setGenre: "Estilo (Jazz / Phonk)", setPause: "Pausa", setSpeed: "Velocidad",
     startSubtitle: "Simulador de Imperio Mediático", startDesc: "Convence al mundo. Supera la Educación, rompe topes de alcance, esquiva la verificación y debate con científicos.",
-    lblPlayer: "Tu nombre:", lblMedia: "Cadena:", lblMyth: "Mito principal:", btnStart: "Iniciar emisión",
-    defaultPlayer: "Slava", defaultMedia: "Verdad-Express TV",
+    lblPlayer: "Tu nombre:", playerPlaceholder: "Introduce tu nombre", playerError: "Introduce tu nombre para empezar",
+    lblMedia: "Cadena:", lblMyth: "Mito principal:", btnStart: "Iniciar emisión",
+    defaultMedia: "Verdad 24",
     presets: [
       { label: "🌍 Tierra plana", myth: "La Tierra en realidad es plana" },
+      { label: "💪 ¿Dónde está la fuerza?", myth: "¿Dónde está la fuerza?" },
       { label: "🐦 Palomas drones", myth: "Las palomas son drones del gobierno" },
       { label: "🌙 Luna holograma", myth: "La Luna es una proyección" },
       { label: "🐱 Gatos en la bolsa", myth: "Los gatos controlan la bolsa" },
@@ -624,7 +747,7 @@ const I18N = {
 const state = {
   lang: "ru", customMyth: false, presetIndex: 0, running: false, paused: false, speed: 1,
   day: 1, daysSinceAction: 0, money: 150, hype: 45, virality: 10, oceanThreshold: 45,
-  playerName: "Вячеслав", mediaName: "Правда-Матка ТВ", myth: "Земля на самом деле плоская",
+  playerName: "", mediaName: "Правда 24", myth: "Земля на самом деле плоская",
   factCheck: 0, defenseFactor: 1.0, incomeMultiplier: 1.0, passiveIncome: 0,
   interviewBonus: 1.0, debateBonus: 0, inflation: 1.0,
   selectedRegionId: "eu", selectedCountryName: "", headlineCooldown: 0,
@@ -684,14 +807,20 @@ const getRegionCap = r => (r.bought || r.upgState.r_tv.level > 0) ? 100
   : r.upgState.r_shorts.level > 0 ? 35
   : r.upgState.r_bots.level > 0 ? 18 : 5;
 
+function toggleMobileAside(open) {
+  document.getElementById("side-panel").classList.toggle("open", open);
+}
+function toggleSettingsModal(open) {
+  document.getElementById("settings-modal").classList.toggle("hidden", !open);
+}
+
 function setLanguage(lang) {
   const prev = t();
   state.lang = lang;
   document.documentElement.lang = lang;
   document.querySelectorAll(".lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   const next = t();
-  const pi = document.getElementById("input-player"), mi = document.getElementById("input-media"), myi = document.getElementById("input-myth");
-  if (pi.value === prev.defaultPlayer) pi.value = next.defaultPlayer;
+  const mi = document.getElementById("input-media"), myi = document.getElementById("input-myth");
   if (mi.value === prev.defaultMedia) mi.value = next.defaultMedia;
   if (!state.customMyth) { myi.value = next.presets[state.presetIndex].myth; state.myth = myi.value; }
   applyStatic();
@@ -701,8 +830,14 @@ function setLanguage(lang) {
 function applyStatic() {
   const d = t();
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("rotate-title", d.rotateTitle); set("rotate-desc", d.rotateDesc);
+  set("btn-mobile-menu", d.mobileMenuBtn); set("settings-title", d.settingsTitle);
+  set("set-lbl-lang", d.setLang); set("set-lbl-music", d.setMusic); set("set-lbl-genre", d.setGenre);
+  set("set-lbl-pause", d.setPause); set("set-lbl-speed", d.setSpeed);
   set("start-subtitle", d.startSubtitle); set("start-desc", d.startDesc);
-  set("lbl-player", d.lblPlayer); set("lbl-media", d.lblMedia); set("lbl-myth", d.lblMyth);
+  set("lbl-player", d.lblPlayer); set("player-error", d.playerError);
+  document.getElementById("input-player").placeholder = d.playerPlaceholder;
+  set("lbl-media", d.lblMedia); set("lbl-myth", d.lblMyth);
   set("btn-start-game", d.btnStart); set("btn-replay", d.replay);
   set("lbl-money", d.lblMoney); set("lbl-hype", d.lblHype); set("lbl-viral", d.lblViral);
   set("lbl-believers", d.lblBelievers); set("lbl-monopoly", d.lblMonopoly); set("lbl-fc", d.lblFc);
@@ -730,7 +865,18 @@ function applyStatic() {
 
 function startGame() {
   const d = t();
-  state.playerName = document.getElementById("input-player").value.trim() || d.defaultPlayer;
+  const pInput = document.getElementById("input-player");
+  const pErr = document.getElementById("player-error");
+  const pName = pInput.value.trim();
+
+  if (!pName) {
+    pInput.classList.add("input-error");
+    pErr.classList.add("show");
+    pInput.focus();
+    return;
+  }
+
+  state.playerName = pName;
   state.mediaName = document.getElementById("input-media").value.trim() || d.defaultMedia;
   const mText = document.getElementById("input-myth").value.trim();
   if (mText) { state.myth = mText; state.customMyth = !d.presets.some(p => p.myth === mText); }
@@ -1207,8 +1353,25 @@ function updateUI() {
 }
 
 function setTicker(s) { document.getElementById("ui-ticker").textContent = s; }
-function togglePause() { state.paused = !state.paused; const b = document.getElementById("btn-pause"); b.textContent = state.paused?"▶":"⏸"; b.classList.toggle("active", state.paused); }
-function toggleSpeed() { state.speed = state.speed===1?2:1; document.getElementById("btn-speed").textContent = state.speed+"x"; gameLoop(); }
+function syncControlButtons() {
+  ["btn-pause", "m-btn-pause"].forEach(id => {
+    const b = document.getElementById(id); if (!b) return;
+    b.textContent = state.paused ? "▶" : "⏸"; b.classList.toggle("active", state.paused);
+  });
+  ["btn-speed", "m-btn-speed"].forEach(id => {
+    const b = document.getElementById(id); if (b) b.textContent = state.speed + "x";
+  });
+  ["btn-music", "m-btn-music"].forEach(id => {
+    const b = document.getElementById(id); if (!b) return;
+    b.textContent = musicEnabled ? "🎵" : "🔇"; b.classList.toggle("active", musicEnabled);
+  });
+  ["btn-genre", "m-btn-genre"].forEach(id => {
+    const b = document.getElementById(id); if (!b) return;
+    b.textContent = state.musicGenre === "phonk" ? "🔥" : "🎷"; b.classList.toggle("active", state.musicGenre === "phonk");
+  });
+}
+function togglePause() { state.paused = !state.paused; syncControlButtons(); }
+function toggleSpeed() { state.speed = state.speed===1?2:1; syncControlButtons(); gameLoop(); }
 function endGame(win, desc) { state.running = false; stopAllMusic(); document.getElementById("end-title").textContent = win?t().winTitle:t().loseTitle; document.getElementById("end-desc").textContent = desc; document.getElementById("end-modal").classList.remove("hidden"); }
 
 // --- AUDIO ENGINE (JAZZ + PHONK + STUDIO + SIMLISH) ---
@@ -1299,9 +1462,7 @@ const startDebateMusic = () => startTrack("debate", dCh, 500, "sawtooth");
 
 function toggleGenre() {
   state.musicGenre = state.musicGenre === "jazz" ? "phonk" : "jazz";
-  const btn = document.getElementById("btn-genre");
-  btn.textContent = state.musicGenre === "phonk" ? "🔥" : "🎷";
-  btn.classList.toggle("active", state.musicGenre === "phonk");
+  syncControlButtons();
   if (musicEnabled && (state.audioMode === "jazz" || state.audioMode === "phonk")) startJazz();
 }
 
@@ -1319,7 +1480,7 @@ function playSimlish(who="host") {
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
-  const b = document.getElementById("btn-music"); b.textContent = musicEnabled?"🎵":"🔇"; b.classList.toggle("active", musicEnabled);
+  syncControlButtons();
   if (musicEnabled) {
     if (state.audioMode==="morning") startMorningShowMusic();
     else if (state.audioMode==="debate") startDebateMusic();
@@ -1328,6 +1489,12 @@ function toggleMusic() {
 }
 
 document.getElementById("input-myth").addEventListener("input", () => { state.customMyth = true; });
+document.getElementById("input-player").addEventListener("input", e => {
+  if (e.target.value.trim()) {
+    e.target.classList.remove("input-error");
+    document.getElementById("player-error").classList.remove("show");
+  }
+});
 applyStatic();
 </script>
 </body>
