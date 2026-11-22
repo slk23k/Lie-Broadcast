@@ -107,7 +107,7 @@
   .modal h1 { font-size: 1.4rem; color: var(--red); text-align: center; letter-spacing: 1px; }
   .modal-slogan { text-align: center; color: var(--amber); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-top: -6px; }
   .modal p { font-size: 0.82rem; color: var(--text-muted); text-align: center; line-height: 1.4; }
-  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; max-height: 112px; overflow-y: auto; padding-right: 4px; }
   .preset-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 20px; font-size: 0.74rem; cursor: pointer; }
   .preset-chip:hover { border-color: var(--red); color: #fff; }
   .btn-start { padding: 11px; background: var(--red); color: #fff; border: none; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; text-transform: uppercase; }
@@ -170,7 +170,7 @@
     </div>
     <div class="select-group">
       <label id="lbl-myth"></label>
-      <input type="text" id="input-myth" class="input-field" value="Земля на самом деле плоская" maxlength="55">
+      <input type="text" id="input-myth" class="input-field" value="Земля на самом деле плоская" maxlength="65">
     </div>
     <div class="presets" id="presets-container"></div>
     <button class="btn-start" id="btn-start-game" onclick="startGame()"></button>
@@ -336,7 +336,31 @@ const I18N = {
       { label: "🌍 Земля плоская", myth: "Земля на самом деле плоская" },
       { label: "🐦 Голуби — дроны", myth: "Голуби — это дроны правительства" },
       { label: "🌙 Луна — голограмма", myth: "Луна — это голограмма" },
-      { label: "🐱 Коты правят биржей", myth: "Коты управляют мировой биржей" }
+      { label: "🐱 Коты правят биржей", myth: "Коты управляют мировой биржей" },
+      { label: "🦘 Австралии нет", myth: "Австралии на самом деле не существует" },
+      { label: "⏰ Времени нет", myth: "Времени не существует — его придумали часовщики" },
+      { label: "🦖 Динозавры улетели", myth: "Динозавры не вымерли, а улетели в космос" },
+      { label: "☁️ Облака — Wi-Fi", myth: "Облака — это гигантские Wi-Fi-роутеры для снов" },
+      { label: "❄️ Снег — пенопласт", myth: "Снег — это пенопласт ради продажи курток" },
+      { label: "🧦 Телепорт носков", myth: "Стиральные машины телепортируют носки в другой мир" },
+      { label: "🏢 Лифт стоит на месте", myth: "Лифты не ездят — это здание двигается вверх-вниз" },
+      { label: "🚦 Заговор светофоров", myth: "Светофоры включают красный, когда ты опаздываешь" },
+      { label: "🤖 Пылесосы-шпионы", myth: "Роботы-пылесосы рисуют план квартиры для курьеров" },
+      { label: "🔘 Кнопка в лифте", myth: "Кнопка закрытия лифта просто измеряет нетерпение" },
+      { label: "🪴 Чат растений", myth: "Комнатные растения переписываются через твой Wi-Fi" },
+      { label: "⏰ Тихий понедельник", myth: "Будильник специально звонит тише по понедельникам" },
+      { label: "🫖 Датчик в чайнике", myth: "В чайниках стоит датчик взгляда — они кипят медленнее" },
+      { label: "🪞 Зеркала-порталы", myth: "Зеркала — это порталы в перевёрнутый мир" },
+      { label: "🔋 Сговор пультов", myth: "Батарейки в пультах садятся на лучшей сцене по сговору" },
+      { label: "👤 Мы все один человек", myth: "Мы все на самом деле один и тот же человек" },
+      { label: "✨ Мы все голограмма", myth: "Мы все — это просто голограмма" },
+      { label: "🧚 Феи реальны", myth: "Феи реально существуют и прячутся в городских парках" },
+      { label: "🦶 Бигфут в лесах", myth: "Бигфут существует, просто он от природы размытый" },
+      { label: "🛸 НЛО-туристы", myth: "НЛО прилетают на Землю как на космическое сафари" },
+      { label: "🔺 Пирамиды — зарядки", myth: "Египетские пирамиды построили пришельцы как зарядные станции" },
+      { label: "🦕 Несси существует", myth: "Лох-несское чудовище реально, просто стесняется камер" },
+      { label: "🔱 Атлантида жива", myth: "Атлантида не утонула — она просто прячется от налогов" },
+      { label: "📐 Бермудский портал", myth: "Бермудский треугольник — это секретная парковка для НЛО" }
     ],
     lblMoney: "Бюджет", lblHype: "Хайп", lblViral: "Вирусность", lblBelievers: "Верующие", lblMonopoly: "Монополия", lblFc: "Фактчекинг",
     dayPrefix: "День", perDay: "/дн", oceanClosed: "Океаны закрыты", oceanOpen: "Океаны открыты!",
@@ -409,7 +433,31 @@ const I18N = {
       { label: "🌍 Flat Earth", myth: "The Earth is actually flat" },
       { label: "🐦 Birds are drones", myth: "Pigeons are government drones" },
       { label: "🌙 Moon hologram", myth: "The Moon is a projection" },
-      { label: "🐱 Cats run markets", myth: "Cats secretly control stock markets" }
+      { label: "🐱 Cats run markets", myth: "Cats secretly control stock markets" },
+      { label: "🦘 No Australia", myth: "Australia doesn't actually exist" },
+      { label: "⏰ Time is fake", myth: "Time was invented by watchmakers" },
+      { label: "🦖 Space dinos", myth: "Dinosaurs didn't die, they flew to space" },
+      { label: "☁️ Cloud Wi-Fi", myth: "Clouds are giant Wi-Fi routers for dreams" },
+      { label: "❄️ Styrofoam snow", myth: "Snow is styrofoam dropped to sell jackets" },
+      { label: "🧦 Sock portals", myth: "Washing machines teleport socks to another dimension" },
+      { label: "🏢 Moving buildings", myth: "Elevators stay still while the building moves" },
+      { label: "🚦 Rigged lights", myth: "Traffic lights turn red on purpose when you're late" },
+      { label: "🤖 Spy vacuums", myth: "Robot vacuums map your home for pizza couriers" },
+      { label: "🔘 Placebo button", myth: "Elevator close buttons only track human impatience" },
+      { label: "🪴 Plant Wi-Fi", myth: "Houseplants text each other over your home Wi-Fi" },
+      { label: "⏰ Monday alarms", myth: "Phone alarms ring 10% quieter every Monday" },
+      { label: "🫖 Kettle sensors", myth: "Kettles have eye sensors and boil slower when watched" },
+      { label: "🪞 Mirror portals", myth: "Mirrors are portals to an inverted parallel world" },
+      { label: "🔋 Remote plot", myth: "TV remote batteries die during the best scene on purpose" },
+      { label: "👤 One person", myth: "We are all actually the exact same person" },
+      { label: "✨ We're a hologram", myth: "All of us are just a hologram" },
+      { label: "🧚 Real fairies", myth: "Fairies are real and hide in city parks" },
+      { label: "🦶 Blurry Bigfoot", myth: "Bigfoot is real, he is just naturally blurry" },
+      { label: "🛸 UFO tourists", myth: "UFOs visit Earth like a cosmic safari park" },
+      { label: "🔺 Alien pyramids", myth: "Aliens built the Egyptian pyramids as charging stations" },
+      { label: "🦕 Nessie is real", myth: "The Loch Ness Monster is real and just camera-shy" },
+      { label: "🔱 Hidden Atlantis", myth: "Atlantis didn't sink, it's just hiding from taxes" },
+      { label: "📐 Bermuda portal", myth: "The Bermuda Triangle is a secret parking lot for UFOs" }
     ],
     lblMoney: "Budget", lblHype: "Hype", lblViral: "Virality", lblBelievers: "Believers", lblMonopoly: "Monopoly", lblFc: "Fact-Check",
     dayPrefix: "Day", perDay: "/d", oceanClosed: "Oceans locked", oceanOpen: "Oceans open!",
@@ -482,7 +530,31 @@ const I18N = {
       { label: "🌍 Tierra plana", myth: "La Tierra en realidad es plana" },
       { label: "🐦 Palomas drones", myth: "Las palomas son drones del gobierno" },
       { label: "🌙 Luna holograma", myth: "La Luna es una proyección" },
-      { label: "🐱 Gatos en la bolsa", myth: "Los gatos controlan la bolsa" }
+      { label: "🐱 Gatos en la bolsa", myth: "Los gatos controlan la bolsa" },
+      { label: "🦘 Sin Australia", myth: "Australia en realidad no existe" },
+      { label: "⏰ El tiempo es falso", myth: "El tiempo lo inventaron los relojeros" },
+      { label: "🦖 Dinos espaciales", myth: "Los dinosaurios volaron al espacio" },
+      { label: "☁️ Nubes Wi-Fi", myth: "Las nubes son routers Wi-Fi gigantes de sueños" },
+      { label: "❄️ Nieve de corcho", myth: "La nieve es plástico para vender abrigos" },
+      { label: "🧦 Portal de calcetines", myth: "Las lavadoras teletransportan calcetines a otro mundo" },
+      { label: "🏢 Edificio móvil", myth: "El ascensor no se mueve, sube y baja el edificio" },
+      { label: "🚦 Semáforos listos", myth: "Los semáforos se ponen rojos cuando llegas tarde" },
+      { label: "🤖 Aspiradoras espía", myth: "Los robots aspiradores mapean tu casa para repartidores" },
+      { label: "🔘 Botón placebo", myth: "El botón de cerrar del ascensor mide tu impaciencia" },
+      { label: "🪴 Plantas con Wi-Fi", myth: "Las plantas de casa chatean usando tu Wi-Fi" },
+      { label: "⏰ Lunes silencioso", myth: "La alarma suena un 10% más baja los lunes" },
+      { label: "🫖 Hervidor tímido", myth: "Los hervidores hierven más lento si los miras" },
+      { label: "🪞 Espejos portales", myth: "Los espejos son portales a un mundo invertido" },
+      { label: "🔋 Pilas del mando", myth: "Las pilas del mando mueren en la mejor escena" },
+      { label: "👤 Una sola persona", myth: "Todos somos en realidad la misma persona" },
+      { label: "✨ Somos holograma", myth: "Todos nosotros somos solo un holograma" },
+      { label: "🧚 Hadas reales", myth: "Las hadas existen y se esconden en los parques" },
+      { label: "🦶 Pie Grande borroso", myth: "Pie Grande existe, solo que es borroso por naturaleza" },
+      { label: "🛸 OVNIs turistas", myth: "Los OVNIs visitan la Tierra como un safari cósmico" },
+      { label: "🔺 Pirámides alien", myth: "Los aliens construyeron las pirámides como cargadores" },
+      { label: "🦕 Nessie existe", myth: "El monstruo del Lago Ness solo es tímido ante cámaras" },
+      { label: "🔱 Atlántida oculta", myth: "La Atlántida no se hundió, solo se esconde de impuestos" },
+      { label: "📐 Portal Bermudas", myth: "El Triángulo de las Bermudas es un parking de OVNIs" }
     ],
     lblMoney: "Presupuesto", lblHype: "Hype", lblViral: "Viralidad", lblBelievers: "Creyentes", lblMonopoly: "Monopolio", lblFc: "Verificación",
     dayPrefix: "Día", perDay: "/d", oceanClosed: "Océanos cerrados", oceanOpen: "¡Océanos abiertos!",
