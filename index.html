@@ -6,6 +6,7 @@
 <title>Lie Broadcast — Fake It Till You Take It</title>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <style>
   :root {
     --bg-dark: #070b14; --bg-panel: #101726; --bg-card: #182236; --border: #273552;
@@ -345,7 +346,7 @@
   <div class="modal">
     <h1 id="end-title"></h1>
     <p id="end-desc"></p>
-    <button class="btn-start" id="btn-replay" onclick="location.reload()"></button>
+    <button class="btn-start" id="btn-replay" onclick="cgShowAd('midgame', () => location.reload())"></button>
   </div>
 </div>
 
@@ -446,6 +447,50 @@
 </main>
 
 <script>
+// --- CRAZYGAMES SDK v3 ---
+let cgReady = false;
+async function initCrazySDK() {
+  try {
+    if (window.CrazyGames && window.CrazyGames.SDK) {
+      await window.CrazyGames.SDK.init();
+      cgReady = true;
+    }
+  } catch (e) { console.warn("CrazyGames SDK init skipped:", e); }
+}
+function cgCall(method) {
+  if (!cgReady) return;
+  try { window.CrazyGames.SDK.game[method](); } catch (e) {}
+}
+function cgShowAd(type = "midgame", onDone = () => {}) {
+  if (!cgReady) { onDone(); return; }
+  const wasPaused = state.paused;
+  const wasMusic = musicEnabled;
+  state.paused = true;
+  if (musicEnabled) stopAllMusic();
+  cgCall("gameplayStop");
+  try {
+    window.CrazyGames.SDK.ad.requestAd(type, {
+      adFinished: () => {
+        state.paused = wasPaused;
+        if (wasMusic && musicEnabled) startJazz();
+        if (!state.paused && state.running) cgCall("gameplayStart");
+        onDone();
+      },
+      adError: () => {
+        state.paused = wasPaused;
+        if (wasMusic && musicEnabled) startJazz();
+        if (!state.paused && state.running) cgCall("gameplayStart");
+        onDone();
+      }
+    });
+  } catch (e) {
+    state.paused = wasPaused;
+    if (wasMusic && musicEnabled) startJazz();
+    onDone();
+  }
+}
+initCrazySDK();
+
 const I18N = {
   ru: {
     mobileMenuBtn: "⚡ Управление", settingsTitle: "⚙️ Настройки",
@@ -905,6 +950,7 @@ function startGame() {
   renderGlobalUpgrades();
   updateHeadlinePreview();
   state.running = true;
+  cgCall("gameplayStart");
   gameLoop();
 }
 
@@ -1056,6 +1102,7 @@ function buyoutRegion() {
   const r = regions.find(x => x.id === state.selectedRegionId), cost = getRegPrice(r.buyoutBase, r);
   if (!r || r.bought || r.bel < 75 || state.money < cost) return;
   registerAction(); state.money -= cost; r.bought = true; r.bel = 100; state.hype = Math.min(100, state.hype + 10);
+  cgCall("happytime");
   setTicker(`★ ${state.mediaName} — ${getRegionName(r.id)}`); updateUI();
 }
 
@@ -1381,9 +1428,21 @@ function syncControlButtons() {
     b.textContent = state.musicGenre === "phonk" ? "🔥" : "🎷"; b.classList.toggle("active", state.musicGenre === "phonk");
   });
 }
-function togglePause() { state.paused = !state.paused; syncControlButtons(); }
+function togglePause() {
+  state.paused = !state.paused;
+  syncControlButtons();
+  cgCall(state.paused ? "gameplayStop" : "gameplayStart");
+}
 function toggleSpeed() { state.speed = state.speed===1?2:1; syncControlButtons(); gameLoop(); }
-function endGame(win, desc) { state.running = false; stopAllMusic(); document.getElementById("end-title").textContent = win?t().winTitle:t().loseTitle; document.getElementById("end-desc").textContent = desc; document.getElementById("end-modal").classList.remove("hidden"); }
+function endGame(win, desc) {
+  state.running = false;
+  stopAllMusic();
+  cgCall("gameplayStop");
+  if (win) cgCall("happytime");
+  document.getElementById("end-title").textContent = win?t().winTitle:t().loseTitle;
+  document.getElementById("end-desc").textContent = desc;
+  document.getElementById("end-modal").classList.remove("hidden");
+}
 
 // --- AUDIO ENGINE (JAZZ + PHONK + STUDIO + SIMLISH) ---
 let audioCtx = null, musicInterval = null, musicEnabled = true, musicStep = 0;
