@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -191,7 +191,7 @@
     .studio-body { padding: 10px 14px; gap: 7px; }
   }
 
-  /* Mobile Portrait (вертикальная версия с крупной картой и свайпом) */
+  /* Mobile Portrait (vertical layout with large scrollable map) */
   @media (max-width: 768px) and (orientation: portrait) {
     .map-container { align-items: flex-start; padding-top: 0; }
     .map-viewport {
@@ -224,8 +224,8 @@
     <div class="modal-top-row">
       <span style="font-size:0.74rem; color:var(--text-muted); font-weight:700;">FAKE IT TILL YOU TAKE IT</span>
       <div class="lang-switch">
-        <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
-        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
         <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
       </div>
     </div>
@@ -235,21 +235,21 @@
     </div>
 
     <h1>LIE BROADCAST</h1>
-    <div class="modal-slogan" id="start-subtitle">Симулятор Медиаимперии</div>
+    <div class="modal-slogan" id="start-subtitle">Media Empire Simulator</div>
     <p id="start-desc"></p>
 
     <div class="select-group">
       <label id="lbl-player"></label>
-      <input type="text" id="input-player" class="input-field" value="" placeholder="Введите имя" maxlength="20" required>
-      <span class="error-hint" id="player-error">Введите имя, чтобы начать эфир</span>
+      <input type="text" id="input-player" class="input-field" value="" placeholder="Enter your name" maxlength="20" required>
+      <span class="error-hint" id="player-error">Enter your name to go live</span>
     </div>
     <div class="select-group">
       <label id="lbl-media"></label>
-      <input type="text" id="input-media" class="input-field" value="Правда 24" maxlength="25">
+      <input type="text" id="input-media" class="input-field" value="Truth 24" maxlength="25">
     </div>
     <div class="select-group">
       <label id="lbl-myth"></label>
-      <input type="text" id="input-myth" class="input-field" value="Земля на самом деле плоская" maxlength="65">
+      <input type="text" id="input-myth" class="input-field" value="The Earth is actually flat" maxlength="65">
     </div>
     <div class="presets" id="presets-container"></div>
     <button class="btn-start" id="btn-start-game" onclick="startGame()"></button>
@@ -259,32 +259,32 @@
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal" style="max-width:360px;">
     <div class="modal-top-row">
-      <h2 id="settings-title" style="font-size:1.05rem;color:var(--amber);">⚙️ Настройки</h2>
+      <h2 id="settings-title" style="font-size:1.05rem;color:var(--amber);">⚙️ Settings</h2>
       <button class="btn-icon" onclick="toggleSettingsModal(false)">✕</button>
     </div>
     <div class="settings-grid">
       <div class="settings-row">
-        <span id="set-lbl-lang">Язык</span>
+        <span id="set-lbl-lang">Language</span>
         <div class="lang-switch">
-          <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
-          <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+          <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+          <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
           <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
         </div>
       </div>
       <div class="settings-row">
-        <span id="set-lbl-music">Музыка</span>
+        <span id="set-lbl-music">Music</span>
         <button class="btn-icon active" id="m-btn-music" onclick="toggleMusic()">🎵</button>
       </div>
       <div class="settings-row">
-        <span id="set-lbl-genre">Стиль (Джаз / Фонк)</span>
+        <span id="set-lbl-genre">Genre (Jazz / Phonk)</span>
         <button class="btn-icon" id="m-btn-genre" onclick="toggleGenre()">🎷</button>
       </div>
       <div class="settings-row">
-        <span id="set-lbl-pause">Пауза</span>
+        <span id="set-lbl-pause">Pause</span>
         <button class="btn-icon" id="m-btn-pause" onclick="togglePause()">⏸</button>
       </div>
       <div class="settings-row">
-        <span id="set-lbl-speed">Скорость</span>
+        <span id="set-lbl-speed">Speed</span>
         <button class="btn-icon" id="m-btn-speed" onclick="toggleSpeed()">1x</button>
       </div>
     </div>
@@ -364,8 +364,8 @@
   </div>
   <div class="controls">
     <div class="lang-switch desktop-only">
-      <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">RU</button>
-      <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">RU</button>
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="es" onclick="setLanguage('es')">ES</button>
     </div>
     <div class="day-badge" id="ui-day">1</div>
@@ -410,7 +410,7 @@
         <button class="btn-action btn-buyout" id="rc-buyout" onclick="buyoutRegion()"></button>
       </div>
     </div>
-    <button class="mobile-only" id="btn-mobile-menu" onclick="toggleMobileAside(true)">⚡ Управление</button>
+    <button class="mobile-only" id="btn-mobile-menu" onclick="toggleMobileAside(true)">⚡ Controls</button>
   </div>
 
   <aside id="side-panel">
@@ -753,9 +753,9 @@ const I18N = {
 };
 
 const state = {
-  lang: "ru", customMyth: false, presetIndex: 0, running: false, paused: false, speed: 1,
+  lang: "en", customMyth: false, presetIndex: 0, running: false, paused: false, speed: 1,
   day: 1, daysSinceAction: 0, money: 150, hype: 45, virality: 10, oceanThreshold: 45,
-  playerName: "", mediaName: "Правда 24", myth: "Земля на самом деле плоская",
+  playerName: "", mediaName: "Truth 24", myth: "The Earth is actually flat",
   factCheck: 0, defenseFactor: 1.0, incomeMultiplier: 1.0, passiveIncome: 0,
   interviewBonus: 1.0, debateBonus: 0, inflation: 1.0,
   selectedRegionId: "eu", selectedCountryName: "", headlineCooldown: 0,
@@ -802,7 +802,7 @@ const globalUpgrades = [
   { id:"m_inv",    cat:"money", baseCost:980, effect:()=>{ state.passiveIncome += 55; } }
 ];
 
-const t = () => I18N[state.lang] || I18N.ru;
+const t = () => I18N[state.lang] || I18N.en;
 const getRegionName = id => t().regNames[id] || id;
 const registerAction = () => { state.daysSinceAction = 0; };
 const getHypeMult = () => Math.max(0.15, state.hype / 50);
@@ -1219,7 +1219,7 @@ const nPool = {
 let ses = null;
 function openMorningInterview() {
   state.paused = true; setStudioTheme("morning"); startMorningShowMusic(); animateSpeaker("host"); playSimlish("host");
-  const ps = nPool[state.lang] || nPool.ru;
+  const ps = nPool[state.lang] || nPool.en;
   ses = { ps, ci:Math.floor(Math.random()*3), pi:Math.floor(Math.random()*3), mi:Math.floor(Math.random()*3), step:0, hd:0, md:0, fd:0, bd:0, ok:0 };
   const txt = {
     ru: [`<strong>ЗАПОМНИ ЛЕГЕНДУ:</strong> ${state.playerName}, ты заявил, что «${state.myth}» скрывают <strong>${ps.c[ses.ci].b}</strong>, доказательство — <strong>${ps.p[ses.pi].b}</strong>, цель — <strong>${ps.m[ses.mi].b}</strong>.`, "📺 Перейти к вопросам", "🏃 Сбежать"],
